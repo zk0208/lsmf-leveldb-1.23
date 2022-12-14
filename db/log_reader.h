@@ -24,7 +24,7 @@ class Reader {
    public:
     virtual ~Reporter();
 
-    // Some corruption was detected.  "size" is the approximate number
+    // Some corruption was detected.  "bytes" is the approximate number
     // of bytes dropped due to the corruption.
     virtual void Corruption(size_t bytes, const Status& status) = 0;
   };
@@ -40,6 +40,10 @@ class Reader {
   //
   // The Reader will start reading at the first record located at physical
   // position >= initial_offset within the file.
+  // Reader的功能是从log文件中读取记录
+  // 如果reporter不是NULL，只要有一些数据由于检测到的损坏而丢失，就会通知它。
+  // 如果“校验和”为真，则验证校验和是否可用。
+  // Reader会从文件内物理位置大于等于initial_offset的第一条记录开始读
   Reader(SequentialFile* file, Reporter* reporter, bool checksum,
          uint64_t initial_offset);
 
@@ -78,6 +82,8 @@ class Reader {
   bool SkipToInitialBlock();
 
   // Return type, or one of the preceding special values
+  // 从文件中读取block，然后再从block中读取并解析一个物理record
+  // 读取一条记录中的数据字段且存储在result中，返回记录类型或者上面的特殊值之一
   unsigned int ReadPhysicalRecord(Slice* result);
 
   // Reports dropped bytes to the reporter.

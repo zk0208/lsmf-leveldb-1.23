@@ -124,6 +124,7 @@ LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
     dst = new char[needed];
   }
   start_ = dst;
+  //userkey size 实际上是 internalkey size
   dst = EncodeVarint32(dst, usize + 8);
   kstart_ = dst;
   std::memcpy(dst, user_key.data(), usize);

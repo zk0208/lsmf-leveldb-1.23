@@ -15,6 +15,7 @@ namespace leveldb {
 
 class VersionSet;
 
+//sst文件元信息结构，包含引用计数、允许seek的次数、文件名、最大值、最小值
 struct FileMetaData {
   FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) {}
 
@@ -45,10 +46,6 @@ class VersionEdit {
     has_prev_log_number_ = true;
     prev_log_number_ = num;
   }
-  void SetOldestLogNumber(uint64_t num) {
-    has_oldest_log_number_ = true;
-    oldest_log_number_= num;
-  }
   void SetNextFile(uint64_t num) {
     has_next_file_number_ = true;
     next_file_number_ = num;
@@ -56,10 +53,6 @@ class VersionEdit {
   void SetLastSequence(SequenceNumber seq) {
     has_last_sequence_ = true;
     last_sequence_ = seq;
-  }
-  void setSingleTreeID(uint64_t id) {
-    has_single_tree_id_ = true;
-    single_tree_id_ = id;
   }
   void SetCompactPointer(int level, const InternalKey& key) {
     compact_pointers_.push_back(std::make_pair(level, key));
@@ -96,17 +89,13 @@ class VersionEdit {
   std::string comparator_;
   uint64_t log_number_;
   uint64_t prev_log_number_;
-  uint64_t oldest_log_number_;
-  uint64_t next_file_number_; //多个tree共用
-  uint64_t single_tree_id_;
+  uint64_t next_file_number_;
   SequenceNumber last_sequence_;
   bool has_comparator_;
   bool has_log_number_;
   bool has_prev_log_number_;
-  bool has_oldest_log_number_;
   bool has_next_file_number_;
   bool has_last_sequence_;
-  bool has_single_tree_id_;
 
   std::vector<std::pair<int, InternalKey>> compact_pointers_;
   DeletedFileSet deleted_files_;

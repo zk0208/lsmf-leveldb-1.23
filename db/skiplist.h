@@ -36,8 +36,6 @@
 
 namespace leveldb {
 
-class Arena;
-
 template <typename Key, class Comparator>
 class SkipList {
  private:
@@ -238,12 +236,13 @@ inline void SkipList<Key, Comparator>::Iterator::SeekToLast() {
   }
 }
 
+ //随机确定树的高度
 template <typename Key, class Comparator>
 int SkipList<Key, Comparator>::RandomHeight() {
   // Increase height with probability 1 in kBranching
   static const unsigned int kBranching = 4;
   int height = 1;
-  while (height < kMaxHeight && ((rnd_.Next() % kBranching) == 0)) {
+  while (height < kMaxHeight && rnd_.OneIn(kBranching)) {
     height++;
   }
   assert(height > 0);
@@ -251,30 +250,33 @@ int SkipList<Key, Comparator>::RandomHeight() {
   return height;
 }
 
+//比较key，传入的是一个key+value,需要提取key
+//优先按照userkey排序（升序）、当userkey相同时，按照sequence排序（降序）
+//sequence全局递增，不可能相同，即排序一定有结果
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
   // null n is considered infinite
   return (n != nullptr) && (compare_(n->key, key) < 0);
 }
-
+//查找并返回大于等于key的节点
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
 SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
                                               Node** prev) const {
-  Node* x = head_;
+  Node* x = head_;  //头结点就是索引起点，高度就是最大的
   int level = GetMaxHeight() - 1;
   while (true) {
     Node* next = x->Next(level);
-    if (KeyIsAfterNode(key, next)) {
+    if (KeyIsAfterNode(key, next)) {  //确定在当前层的key应该在的node位置
       // Keep searching in this list
       x = next;
     } else {
-      if (prev != nullptr) prev[level] = x;
+      if (prev != nullptr) prev[level] = x; //记录每一层的prev位置
       if (level == 0) {
         return next;
       } else {
         // Switch to next list
-        level--;
+        level--;  //level降低，再依次寻找
       }
     }
   }
@@ -341,9 +343,10 @@ void SkipList<Key, Comparator>::Insert(const Key& key) {
   Node* x = FindGreaterOrEqual(key, prev);
 
   // Our data structure does not allow duplicate insertion
-  assert(x == nullptr || !Equal(key, x->key));
+  // 不许重复插入
+  assert(x == nullptr || !Equal(key, x->key));  //sequence一定不同，全局递增
 
-  int height = RandomHeight();
+  int height = RandomHeight();  //随机增加高度
   if (height > GetMaxHeight()) {
     for (int i = GetMaxHeight(); i < height; i++) {
       prev[i] = head_;

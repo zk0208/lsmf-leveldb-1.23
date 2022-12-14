@@ -244,7 +244,7 @@ TEST_F(MemEnvTest, DBTest) {
   ASSERT_TRUE(!iterator->Valid());
   delete iterator;
 
-  SingleTree* dbi = reinterpret_cast<SingleTree*>(db);
+  DBImpl* dbi = reinterpret_cast<DBImpl*>(db);
   ASSERT_LEVELDB_OK(dbi->TEST_CompactMemTable());
 
   for (size_t i = 0; i < 3; ++i) {
@@ -257,8 +257,3 @@ TEST_F(MemEnvTest, DBTest) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

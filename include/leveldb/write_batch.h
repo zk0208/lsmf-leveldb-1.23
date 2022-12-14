@@ -22,7 +22,7 @@
 #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 
 #include <string>
-#include "db/dbformat.h"
+
 #include "leveldb/export.h"
 #include "leveldb/status.h"
 
@@ -46,11 +46,6 @@ class LEVELDB_EXPORT WriteBatch {
   WriteBatch& operator=(const WriteBatch&) = default;
 
   ~WriteBatch();
-
-  //batch中应该内容均属于一个Tree，但是没有记录，所以写一个解析batch中key的函数
-  Status GetKey(const int& index, Slice * key, Slice* value, ValueType* type);
-  //将原始batch中内容分成多个batch
-  Status GetKey2(WriteBatch* batchs, int* batchs_num);
 
   // Store the mapping "key->value" in the database.
   void Put(const Slice& key, const Slice& value);
@@ -79,7 +74,7 @@ class LEVELDB_EXPORT WriteBatch {
 
  private:
   friend class WriteBatchInternal;
-
+  //rep_用来保存writebatch中的数据，格式就是sequence（可以理解为第一个record的数目） + count（record条数） + data
   std::string rep_;  // See comment in write_batch.cc for the format of rep_
 };
 

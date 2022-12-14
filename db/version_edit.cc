@@ -20,25 +20,21 @@ enum Tag {
   kDeletedFile = 6,
   kNewFile = 7,
   // 8 was used for large value refs
-  kPrevLogNumber = 9,
-  kSingleTreeID = 10,
-  kOldestLogNumber =11
+  kPrevLogNumber = 9
 };
 
 void VersionEdit::Clear() {
   comparator_.clear();
-  single_tree_id_ = 0;
   log_number_ = 0;
   prev_log_number_ = 0;
-  oldest_log_number_=0;
   last_sequence_ = 0;
   next_file_number_ = 0;
   has_comparator_ = false;
   has_log_number_ = false;
   has_prev_log_number_ = false;
-  has_oldest_log_number_=false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
+  compact_pointers_.clear();
   deleted_files_.clear();
   new_files_.clear();
 }
@@ -48,10 +44,6 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint32(dst, kComparator);
     PutLengthPrefixedSlice(dst, comparator_);
   }
-  if (has_single_tree_id_) {
-    PutVarint32(dst, kSingleTreeID);
-    PutVarint64(dst, single_tree_id_);
-  }
   if (has_log_number_) {
     PutVarint32(dst, kLogNumber);
     PutVarint64(dst, log_number_);
@@ -59,10 +51,6 @@ void VersionEdit::EncodeTo(std::string* dst) const {
   if (has_prev_log_number_) {
     PutVarint32(dst, kPrevLogNumber);
     PutVarint64(dst, prev_log_number_);
-  }
-  if (has_oldest_log_number_) {
-    PutVarint32(dst, kOldestLogNumber);
-    PutVarint64(dst, oldest_log_number_);
   }
   if (has_next_file_number_) {
     PutVarint32(dst, kNextFileNumber);
@@ -138,14 +126,6 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
           msg = "comparator name";
         }
         break;
-      
-      case kSingleTreeID:
-        if (GetVarint64(&input, &single_tree_id_)) {
-          has_single_tree_id_ = true;
-        } else {
-          msg = "singleTree id";
-        }
-        break;
 
       case kLogNumber:
         if (GetVarint64(&input, &log_number_)) {
@@ -160,14 +140,6 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
           has_prev_log_number_ = true;
         } else {
           msg = "previous log number";
-        }
-        break;
-
-      case kOldestLogNumber:
-        if (GetVarint64(&input, &oldest_log_number_)) {
-          has_oldest_log_number_ = true;
-        } else {
-          msg = "oldest log number";
         }
         break;
 
@@ -238,10 +210,6 @@ std::string VersionEdit::DebugString() const {
     r.append("\n  Comparator: ");
     r.append(comparator_);
   }
-  if (has_single_tree_id_) {
-    r.append("\n  SingleTreeID: ");
-    AppendNumberTo(&r, single_tree_id_);
-  }
   if (has_log_number_) {
     r.append("\n  LogNumber: ");
     AppendNumberTo(&r, log_number_);
@@ -249,10 +217,6 @@ std::string VersionEdit::DebugString() const {
   if (has_prev_log_number_) {
     r.append("\n  PrevLogNumber: ");
     AppendNumberTo(&r, prev_log_number_);
-  }
-  if (has_oldest_log_number_) {
-    r.append("\n  OldestLogNumber: ");
-    AppendNumberTo(&r, oldest_log_number_);
   }
   if (has_next_file_number_) {
     r.append("\n  NextFile: ");

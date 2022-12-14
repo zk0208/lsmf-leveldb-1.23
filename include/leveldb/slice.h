@@ -86,8 +86,8 @@ class LEVELDB_EXPORT Slice {
   }
 
  private:
-  const char* data_;
-  size_t size_;
+  const char* data_;  //字符串开始地址
+  size_t size_; //字符串的长度
 };
 
 inline bool operator==(const Slice& x, const Slice& y) {

@@ -5,6 +5,7 @@
 #include "db/table_cache.h"
 
 #include "db/filename.h"
+#include <cstdint>
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "util/coding.h"
@@ -40,7 +41,8 @@ TableCache::TableCache(const std::string& dbname, const Options& options,
 
 TableCache::~TableCache() { delete cache_; }
 
-Status TableCache::FindTable(const std::string& filedir, uint64_t file_number, uint64_t file_size,
+//从table cache中差再找table，实现了缓存table的逻辑
+Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
   Status s;
   char buf[sizeof(file_number)];
@@ -48,18 +50,20 @@ Status TableCache::FindTable(const std::string& filedir, uint64_t file_number, u
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
   findfile_all_num_++;
-  if (*handle == nullptr) {
+  if (*handle == nullptr) { //tablecache中没找到
     findfile_fail_++;
-    std::string fname = TableFileName(filedir, file_number);
+    std::string fname = TableFileName(dbname_, file_number);
     RandomAccessFile* file = nullptr;
     Table* table = nullptr;
+    //根据文件名打开file
     s = env_->NewRandomAccessFile(fname, &file);
     if (!s.ok()) {
-      std::string old_fname = SSTTableFileName(filedir, file_number);
+      std::string old_fname = SSTTableFileName(dbname_, file_number);
       if (env_->NewRandomAccessFile(old_fname, &file).ok()) {
         s = Status::OK();
       }
     }
+    //打开file中的table
     if (s.ok()) {
       s = Table::Open(options_, file, file_size, &table);
     }
@@ -70,6 +74,7 @@ Status TableCache::FindTable(const std::string& filedir, uint64_t file_number, u
       // We do not cache error results so that if the error is transient,
       // or somebody repairs the file, we recover automatically.
     } else {
+      //打开之后插入到tablecache
       TableAndFile* tf = new TableAndFile;
       tf->file = file;
       tf->table = table;
@@ -87,7 +92,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   }
 
   Cache::Handle* handle = nullptr;
-  Status s = FindTable(options.read_dir, file_number, file_size, &handle);
+  Status s = FindTable(file_number, file_size, &handle);
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
@@ -106,10 +111,10 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
                        void (*handle_result)(void*, const Slice&,
                                              const Slice&)) {
   Cache::Handle* handle = nullptr;
-  Status s = FindTable(options.read_dir, file_number, file_size, &handle);
+  Status s = FindTable(file_number, file_size, &handle);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
-    s = t->InternalGet(options, k, arg, handle_result);
+    s = t->InternalGet(options, k, arg, handle_result); //找到table，具体查找k
     cache_->Release(handle);
   }
   return s;

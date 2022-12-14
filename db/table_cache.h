@@ -22,6 +22,10 @@ class Env;
 class TableCache {
  public:
   TableCache(const std::string& dbname, const Options& options, int entries);
+
+  TableCache(const TableCache&) = delete;
+  TableCache& operator=(const TableCache&) = delete;
+
   ~TableCache();
 
   uint64_t Get_find_num(const int index);
@@ -46,7 +50,7 @@ class TableCache {
   void Evict(uint64_t file_number);
 
  private:
-  Status FindTable(const std::string& filedir, uint64_t file_number, uint64_t file_size, Cache::Handle**);
+  Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 
   Env* const env_;
   const std::string dbname_;

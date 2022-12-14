@@ -1,0 +1,219 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "third_party/benchmark/src/libbenchmark_main.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"install",
+			"target_link_libraries",
+			"add_definitions",
+			"cxx_feature_check",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"third_party/benchmark/src/CMakeLists.txt",
+			"third_party/benchmark/cmake/CXXFeatureCheck.cmake",
+			"third_party/benchmark/CMakeLists.txt",
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 63,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 95,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 73,
+				"parent" : 0
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 276,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 61,
+				"parent" : 5
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 274,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 61,
+				"parent" : 7
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 285,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 61,
+				"parent" : 9
+			},
+			{
+				"file" : 3
+			},
+			{
+				"command" : 5,
+				"file" : 3,
+				"line" : 106,
+				"parent" : 11
+			},
+			{
+				"command" : 5,
+				"file" : 2,
+				"line" : 295,
+				"parent" : 4
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 3,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g"
+				},
+				{
+					"fragment" : "-std=c++11"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 6,
+					"define" : "HAVE_POSIX_REGEX"
+				},
+				{
+					"backtrace" : 8,
+					"define" : "HAVE_STD_REGEX"
+				},
+				{
+					"backtrace" : 10,
+					"define" : "HAVE_STEADY_CLOCK"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 12,
+					"path" : "/home/zhuo1/lsmf/leveldb-1.23/build/include"
+				},
+				{
+					"backtrace" : 12,
+					"path" : "/home/zhuo1/lsmf/leveldb-1.23/."
+				},
+				{
+					"backtrace" : 13,
+					"path" : "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/include"
+				},
+				{
+					"backtrace" : 14,
+					"path" : "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src"
+				},
+				{
+					"backtrace" : 3,
+					"path" : "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/../include"
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "benchmark::@27580315aaf28f4a2bec"
+		}
+	],
+	"id" : "benchmark_main::@27580315aaf28f4a2bec",
+	"install" : 
+	{
+		"destinations" : 
+		[
+			{
+				"backtrace" : 2,
+				"path" : "lib"
+			}
+		],
+		"prefix" : 
+		{
+			"path" : "/usr/local"
+		}
+	},
+	"name" : "benchmark_main",
+	"nameOnDisk" : "libbenchmark_main.a",
+	"paths" : 
+	{
+		"build" : "third_party/benchmark/src",
+		"source" : "third_party/benchmark/src"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "third_party/benchmark/src/benchmark_main.cc",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

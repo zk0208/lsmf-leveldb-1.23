@@ -13,9 +13,6 @@
 namespace leveldb {
 
 uint32_t Hash(const char* data, size_t n, uint32_t seed);
-uint32_t MurmurHash(const void *buf, size_t len);
-
-#define GetSingleTreeID(key_ptr, len) MurmurHash((key_ptr), (len))
 
 }  // namespace leveldb
 

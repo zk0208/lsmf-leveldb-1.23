@@ -15,7 +15,6 @@
 #ifndef STORAGE_LEVELDB_DB_VERSION_SET_H_
 #define STORAGE_LEVELDB_DB_VERSION_SET_H_
 
-#include <atomic>
 #include <map>
 #include <set>
 #include <vector>
@@ -60,9 +59,6 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
 
 class Version {
  public:
-  // Lookup the value for key.  If found, store it in *val and
-  // return OK.  Else return a non-OK status.  Fills *stats.
-  // REQUIRES: lock is not held
   struct GetStats {
     FileMetaData* seek_file;
     int seek_file_level;
@@ -73,6 +69,9 @@ class Version {
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
   void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
 
+  // Lookup the value for key.  If found, store it in *val and
+  // return OK.  Else return a non-OK status.  Fills *stats.
+  // REQUIRES: lock is not held
   Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
              GetStats* stats);
 
@@ -168,7 +167,7 @@ class Version {
 class VersionSet {
  public:
   VersionSet(const std::string& dbname, const Options* options,
-             TableCache* table_cache, const InternalKeyComparator*, const uint32_t id);
+             TableCache* table_cache, const InternalKeyComparator*);
   VersionSet(const VersionSet&) = delete;
   VersionSet& operator=(const VersionSet&) = delete;
 
@@ -183,11 +182,7 @@ class VersionSet {
       EXCLUSIVE_LOCKS_REQUIRED(mu);
 
   // Recover the last saved descriptor from persistent storage.
-  //Status Recover(bool* save_manifest);
-  static Status Recover(bool* save_manifest, std::vector<VersionSet*>& version_sets);
-
-  static Status InitManifest(Env* const env, const std::string dbname,
-                             std::vector<VersionSet*>& version_sets);
+  Status Recover(bool* save_manifest);
 
   // Return the current version.
   Version* current() const { return current_; }
@@ -227,8 +222,6 @@ class VersionSet {
 
   // Return the current log file number.
   uint64_t LogNumber() const { return log_number_; }
-  //return the oldest log number that the context for the tree in the log could delete
-  uint64_t OldestLogNumber() const { return oldest_log_number; }
 
   // Return the log file number for the log file that is currently
   // being compacted, or zero if there is no such log file.
@@ -275,11 +268,6 @@ class VersionSet {
     char buffer[100];
   };
   const char* LevelSummary(LevelSummaryStorage* scratch) const;
-  uint32_t GetID() { return id_; }
-  static void SetMutex(port::Mutex* mu) { mutex_ = mu; }
-  // opened lazily
-  static WritableFile* descriptor_file_;
-  static log::Writer* descriptor_log_;
 
  private:
   class Builder;
@@ -302,30 +290,23 @@ class VersionSet {
 
   // Save current contents to *log
   Status WriteSnapshot(log::Writer* log);
-  static Status WriteSnapshot(log::Writer* log,
-                              std::vector<VersionSet*>& version_sets);
 
   void AppendVersion(Version* v);
 
   Env* const env_;
   const std::string dbname_;
-  const std::string sub_treedir_;
   const Options* const options_;
   TableCache* const table_cache_;
   const InternalKeyComparator icmp_;
-
+  uint64_t next_file_number_;
+  uint64_t manifest_file_number_;
   uint64_t last_sequence_;
   uint64_t log_number_;
   uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
-  uint64_t oldest_log_number; //记录当前Tree需要的最远log，用来删除旧log
-  uint32_t id_;
-  //关于文件的number问题暂时使用的是静态数据成员变量都可以修改解决,且是原子更新
-  static std::atomic_uint64_t next_file_number_;
-  static uint64_t manifest_file_number_;
-  //多个版本都需要修改manifest文件，每个数据库一个文件，故需要获取数据库锁
-  static port::Mutex* mutex_; 
 
   // Opened lazily
+  WritableFile* descriptor_file_;
+  log::Writer* descriptor_log_;
   Version dummy_versions_;  // Head of circular doubly-linked list of versions.
   Version* current_;        // == dummy_versions_.prev_
 

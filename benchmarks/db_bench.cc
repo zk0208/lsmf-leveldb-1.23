@@ -401,7 +401,7 @@ class Benchmark {
     std::fprintf(stdout, "Entries:    %d\n", num_);
     std::fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
                  ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_) /
-                  1048576.0));
+                  1048576.0));//计算所有条目（单位B的大小），单位MB
     std::fprintf(
         stdout, "FileSize:   %.1f MB (estimated)\n",
         (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_) /
@@ -432,7 +432,7 @@ class Benchmark {
     }
   }
 
-  void PrintEnvironment() {
+  void PrintEnvironment() {//打印leveldb的版本、时间信息、CPU数量、类型、CPUcache的大小
     std::fprintf(stderr, "LevelDB:    version %d.%d\n", kMajorVersion,
                  kMinorVersion);
 
@@ -441,7 +441,7 @@ class Benchmark {
     std::fprintf(stderr, "Date:       %s",
                  ctime(&now));  // ctime() adds newline
 
-    FILE* cpuinfo = std::fopen("/proc/cpuinfo", "r");
+    FILE* cpuinfo = std::fopen("/proc/cpuinfo", "r");//Linux伪文件系统，访问CPU信息
     if (cpuinfo != nullptr) {
       char line[1000];
       int num_cpus = 0;
@@ -520,7 +520,7 @@ class Benchmark {
       // Reset parameters that may be overridden below
       num_ = FLAGS_num;
       reads_ = (FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads);
-       scanLength_ = (FLAGS_scanLength < 0 ? 1000 : FLAGS_scanLength);
+      scanLength_ = (FLAGS_scanLength < 0 ? 1000 : FLAGS_scanLength);
       value_size_ = FLAGS_value_size;
       entries_per_batch_ = (FLAGS_batch_num < 0 ? 1 : FLAGS_batch_num);
       write_options_ = WriteOptions();
@@ -795,7 +795,8 @@ class Benchmark {
     // 自己的配置
     options.disable_compaction = FLAGS_disable_compaction;
     // options.compression = kNoCompression;
-
+    //open函数在纯虚类DB中给出声明，实现代码和纯虚函数一样在db_impl.h中给出
+    //指针 db_ 指向子类对象
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
       std::fprintf(stderr, "open error: %s\n", s.ToString().c_str());

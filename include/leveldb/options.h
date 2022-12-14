@@ -6,7 +6,6 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <cstddef>
-#include <string>
 
 #include "leveldb/export.h"
 
@@ -46,11 +45,9 @@ struct LEVELDB_EXPORT Options {
   // comparator provided to previous open calls on the same DB.
   const Comparator* comparator;
 
-  bool depart_log = false;
-  std::string log_dir = "logdir";
   // 默认开启compaction
   bool disable_compaction = false;
-
+  
   // If true, the database will be created if it is missing.
   bool create_if_missing = false;
 
@@ -150,17 +147,6 @@ struct LEVELDB_EXPORT Options {
 
 // Options that control read operations
 struct LEVELDB_EXPORT ReadOptions {
-  ReadOptions() = default;
-  // ReadOptions(const ReadOptions &option){
-  //   read_dir = option.read_dir;
-  //   verify_checksums = option.verify_checksums;
-  //   fill_cache = option.fill_cache;
-  //   Snapshot snapshot1 = *option.snapshot;
-  // }
-
-  //读取文件时要指定tree id
-  std::string read_dir;
-
   // If true, all data read from underlying storage will be
   // verified against corresponding checksums.
   bool verify_checksums = false;

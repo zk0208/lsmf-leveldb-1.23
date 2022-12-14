@@ -18,6 +18,8 @@ void PutFixed64(std::string* dst, uint64_t value) {
   dst->append(buf, sizeof(buf));
 }
 
+//变长编码，，默认是小端存储，存储到字符数组中，每一个字节中最高位即最左边为判断位
+//为1时则后续还有，为0时结束，对小数字很友好
 char* EncodeVarint32(char* dst, uint32_t v) {
   // Operate on characters as unsigneds
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
@@ -51,7 +53,7 @@ void PutVarint32(std::string* dst, uint32_t v) {
   char* ptr = EncodeVarint32(buf, v);
   dst->append(buf, ptr - buf);
 }
-
+//与EncodeVarint32相同的思想
 char* EncodeVarint64(char* dst, uint64_t v) {
   static const int B = 128;
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
@@ -89,6 +91,7 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
   for (uint32_t shift = 0; shift <= 28 && p < limit; shift += 7) {
     uint32_t byte = *(reinterpret_cast<const uint8_t*>(p));
     p++;
+    //小端，先处理低地址，即每个字节最高位为1
     if (byte & 128) {
       // More bytes are present
       result |= ((byte & 127) << shift);
@@ -140,16 +143,6 @@ bool GetVarint64(Slice* input, uint64_t* value) {
     *input = Slice(q, limit - q);
     return true;
   }
-}
-
-const char* GetLengthPrefixedSlice(const char* p, const char* limit,
-                                   Slice* result) {
-  uint32_t len;
-  p = GetVarint32Ptr(p, limit, &len);
-  if (p == nullptr) return nullptr;
-  if (p + len > limit) return nullptr;
-  *result = Slice(p, len);
-  return p + len;
 }
 
 bool GetLengthPrefixedSlice(Slice* input, Slice* result) {

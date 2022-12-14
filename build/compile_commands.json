@@ -1,0 +1,472 @@
+[
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/status_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/status_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/status_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/no_destructor_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/no_destructor_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/no_destructor_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/testutil.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/autocompact_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/autocompact_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/autocompact_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/corruption_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/corruption_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/corruption_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/db_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/db_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/db_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/dbformat_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/dbformat_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/dbformat_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/filename_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/filename_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/filename_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/log_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/log_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/log_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/recovery_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/recovery_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/recovery_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/skiplist_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/skiplist_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/skiplist_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/version_edit_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/version_edit_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/version_edit_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/version_set_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/version_set_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/version_set_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/db/write_batch_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/write_batch_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/write_batch_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/helpers/memenv/memenv_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/helpers/memenv/memenv_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/helpers/memenv/memenv_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/table/filter_block_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/filter_block_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/filter_block_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/table/table_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/table_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/table_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/arena_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/arena_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/arena_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/bloom_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/bloom_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/bloom_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/cache_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/cache_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/cache_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/coding_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/coding_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/coding_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/crc32c_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/crc32c_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/crc32c_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/hash_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/hash_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/hash_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb_tests.dir/util/logging_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/logging_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/logging_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/builder.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/builder.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/builder.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/c.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/c.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/c.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/db_impl.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/db_impl.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/db_impl.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/db_iter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/db_iter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/db_iter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/dbformat.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/dbformat.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/dbformat.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/dumpfile.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/dumpfile.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/dumpfile.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/filename.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/filename.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/filename.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/log_reader.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/log_reader.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/log_reader.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/log_writer.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/log_writer.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/log_writer.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/memtable.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/memtable.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/memtable.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/repair.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/repair.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/repair.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/table_cache.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/table_cache.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/table_cache.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/version_edit.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/version_edit.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/version_edit.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/version_set.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/version_set.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/version_set.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/db/write_batch.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/write_batch.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/write_batch.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/block_builder.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/block_builder.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/block_builder.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/block.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/block.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/block.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/filter_block.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/filter_block.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/filter_block.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/format.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/format.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/format.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/iterator.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/iterator.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/iterator.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/merger.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/merger.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/merger.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/table_builder.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/table_builder.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/table_builder.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/table.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/table.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/table.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/table/two_level_iterator.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/table/two_level_iterator.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/table/two_level_iterator.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/arena.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/arena.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/arena.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/bloom.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/bloom.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/bloom.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/cache.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/cache.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/cache.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/coding.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/coding.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/coding.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/comparator.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/comparator.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/comparator.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/crc32c.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/crc32c.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/crc32c.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/env.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/env.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/env.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/filter_policy.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/filter_policy.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/filter_policy.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/hash.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/hash.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/hash.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/logging.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/logging.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/logging.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/options.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/options.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/options.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/status.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/status.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/status.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/util/env_posix.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/env_posix.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/env_posix.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_COMPILE_LIBRARY -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldb.dir/helpers/memenv/memenv.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/helpers/memenv/memenv.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/helpers/memenv/memenv.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/env_posix_test.dir/util/testutil.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/env_posix_test.dir/util/env_posix_test.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/env_posix_test.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/env_posix_test.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -Iinclude -I../. -I../include  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/leveldbutil.dir/db/leveldbutil.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/db/leveldbutil.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/leveldbutil.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/c_test.dir/util/testutil.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/gcc-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -Wstrict-prototypes -g -pthread -std=c11 -o CMakeFiles/c_test.dir/db/c_test.c.o -c /home/zhuo1/lsmf/leveldb-1.23/db/c_test.c",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/db/c_test.c"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -I../third_party/benchmark/src/../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/db_bench.dir/util/histogram.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/histogram.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/histogram.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -I../third_party/benchmark/src/../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/db_bench.dir/util/testutil.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/util/testutil.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DLEVELDB_PLATFORM_POSIX=1 -Iinclude -I../. -I../include -I../third_party/benchmark/src/../include -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -pthread -std=c++11 -o CMakeFiles/db_bench.dir/benchmarks/db_bench.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/benchmarks/db_bench.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/benchmarks/db_bench.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -Iinclude -I../. -isystem ../third_party/googletest/googlemock/include -isystem ../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -Wall -Wshadow -Werror -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -pthread -std=c++11 -o third_party/googletest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googlemock/src/gmock_main.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googlemock/src/gmock_main.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -Iinclude -I../. -I../third_party/googletest/googlemock/include -I../third_party/googletest/googlemock -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -Wall -Wshadow -Werror -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-missing-field-initializers -pthread -std=c++11 -o third_party/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googlemock/src/gmock-all.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googlemock/src/gmock-all.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -Iinclude -I../. -I../third_party/googletest/googletest/include -I../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -Wall -Wshadow -Werror -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-missing-field-initializers -pthread -std=c++11 -o third_party/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googletest/src/gtest-all.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googletest/src/gtest-all.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -Iinclude -I../. -isystem ../third_party/googletest/googletest/include -isystem ../third_party/googletest/googletest  -fno-exceptions -fno-rtti -g -Wall -Wshadow -Werror -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -pthread -std=c++11 -o third_party/googletest/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googletest/src/gtest_main.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/googletest/googletest/src/gtest_main.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/benchmark.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_api_internal.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_api_internal.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_name.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_name.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_register.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_register.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_runner.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_runner.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/colorprint.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/colorprint.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/colorprint.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/commandlineflags.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/commandlineflags.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/complexity.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/complexity.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/complexity.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/console_reporter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/console_reporter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/console_reporter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/counter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/counter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/counter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/csv_reporter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/csv_reporter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/json_reporter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/json_reporter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/json_reporter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/perf_counters.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/perf_counters.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/perf_counters.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/reporter.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/reporter.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/reporter.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/sleep.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/sleep.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/sleep.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/statistics.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/statistics.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/statistics.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/string_util.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/string_util.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/string_util.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/sysinfo.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/sysinfo.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/sysinfo.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark.dir/timers.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/timers.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/timers.cc"
+},
+{
+  "directory": "/home/zhuo1/lsmf/leveldb-1.23/build",
+  "command": "/usr/bin/g++-8 -DHAVE_POSIX_REGEX -DHAVE_STD_REGEX -DHAVE_STEADY_CLOCK -Iinclude -I../. -I../third_party/benchmark/include -I../third_party/benchmark/src -I../third_party/benchmark/src/../include  -fno-exceptions -fno-rtti  -std=c++11  -Wall  -Wextra  -Wshadow  -Wsuggest-override  -fstrict-aliasing  -Wno-deprecated-declarations  -fno-exceptions  -Wstrict-aliasing -g -std=c++11 -o third_party/benchmark/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o -c /home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_main.cc",
+  "file": "/home/zhuo1/lsmf/leveldb-1.23/third_party/benchmark/src/benchmark_main.cc"
+}
+]

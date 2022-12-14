@@ -29,8 +29,8 @@
 
 // GOOGLETEST_CM0001 DO NOT DELETE
 
-#ifndef GTEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_
-#define GTEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_
+#ifndef GOOGLETEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_
+#define GOOGLETEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_
 
 // This header implements typed tests and type-parameterized tests.
 
@@ -175,8 +175,6 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
 
 // Implements typed tests.
 
-#if GTEST_HAS_TYPED_TEST
-
 // INTERNAL IMPLEMENTATION - DO NOT USE IN USER CODE.
 //
 // Expands to the name of the typedef for the type parameters of the
@@ -230,11 +228,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
   TYPED_TEST_SUITE
 #endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
-#endif  // GTEST_HAS_TYPED_TEST
-
 // Implements type-parameterized tests.
-
-#if GTEST_HAS_TYPED_TEST_P
 
 // INTERNAL IMPLEMENTATION - DO NOT USE IN USER CODE.
 //
@@ -297,7 +291,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
   static const char* const GTEST_REGISTERED_TEST_NAMES_(                    \
       SuiteName) GTEST_ATTRIBUTE_UNUSED_ =                                  \
       GTEST_TYPED_TEST_SUITE_P_STATE_(SuiteName).VerifyRegisteredTestNames( \
-          __FILE__, __LINE__, #__VA_ARGS__)
+          GTEST_STRINGIFY_(SuiteName), __FILE__, __LINE__, #__VA_ARGS__)
 
 // Legacy API is deprecated but still available
 #ifndef GTEST_REMOVE_LEGACY_TEST_CASEAPI_
@@ -332,6 +326,4 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
   INSTANTIATE_TYPED_TEST_SUITE_P
 #endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
-#endif  // GTEST_HAS_TYPED_TEST_P
-
-#endif  // GTEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_
+#endif  // GOOGLETEST_INCLUDE_GTEST_GTEST_TYPED_TEST_H_

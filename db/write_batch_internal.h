@@ -34,7 +34,7 @@ class WriteBatchInternal {
   static size_t ByteSize(const WriteBatch* batch) { return batch->rep_.size(); }
 
   static void SetContents(WriteBatch* batch, const Slice& contents);
-
+  //插入数据到mem中
   static Status InsertInto(const WriteBatch* batch, MemTable* memtable);
 
   static void Append(WriteBatch* dst, const WriteBatch* src);

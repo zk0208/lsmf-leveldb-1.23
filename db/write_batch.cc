@@ -20,7 +20,6 @@
 #include "db/write_batch_internal.h"
 #include "leveldb/db.h"
 #include "util/coding.h"
-#include "util/hash.h"
 
 namespace leveldb {
 
@@ -52,7 +51,7 @@ Status WriteBatch::Iterate(Handler* handler) const {
   while (!input.empty()) {
     found++;
     char tag = input[0];
-    input.remove_prefix(1);
+    input.remove_prefix(1); //获取record类型（value、delete）之后移除类型
     switch (tag) {
       case kTypeValue:
         if (GetLengthPrefixedSlice(&input, &key) &&
@@ -96,89 +95,8 @@ void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
   EncodeFixed64(&b->rep_[0], seq);
 }
 
-Status WriteBatch::GetKey(const int& index, Slice* key, Slice* value, ValueType* type){
-  Slice input(rep_);
-  if (input.size() < kHeader) {
-    return Status::Corruption("malformed WriteBatch (too small)");
-  }
-  if (index >= WriteBatchInternal::Count(this)) {
-    return Status::Corruption("WriteBatch access violation");
-  }
-  input.remove_prefix(kHeader);
-  int found = 0;
-  while (!input.empty() && found <= index) {
-    found++;
-    char tag = input[0];
-    input.remove_prefix(1);
-    switch (tag) {
-      case kTypeValue:
-        if (GetLengthPrefixedSlice(&input, key) &&
-            GetLengthPrefixedSlice(&input, value)) {
-              *type = kTypeValue;
-        } else {
-          return Status::Corruption("bad WriteBatch Put");
-        }
-        break;
-      case kTypeDeletion:
-        if (GetLengthPrefixedSlice(&input, key)) {
-          *type = kTypeDeletion;
-          value = nullptr;
-        } else {
-          return Status::Corruption("bad WriteBatch Delete");
-        }
-        break;
-      default:
-        return Status::Corruption("unknown WriteBatch tag");
-    }
-  }
-  return Status::OK();
-}
-Status WriteBatch::GetKey2(WriteBatch* batchs, int* batchs_num){
-  Slice input(rep_);
-  if (input.size() < kHeader) {
-    return Status::Corruption("malformed WriteBatch (too small)");
-  }
-
-  input.remove_prefix(kHeader);
-  Slice key, value;
-  int found = 0;
-  while (!input.empty()) {
-    found++;
-    char tag = input[0];
-    input.remove_prefix(1);
-    switch (tag) {
-      case kTypeValue:
-        if (GetLengthPrefixedSlice(&input, &key) &&
-            GetLengthPrefixedSlice(&input, &value)) {
-          uint32_t Tree_id = GetSingleTreeID(key.data(), key.size()) % config::kNumSingleTrees;
-          batchs[Tree_id].Put(key, value);
-          batchs_num[Tree_id]++;
-        } else {
-          return Status::Corruption("bad WriteBatch Put");
-        }
-        break;
-      case kTypeDeletion:
-        if (GetLengthPrefixedSlice(&input, &key)) {
-          uint32_t Tree_id = GetSingleTreeID(key.data(), key.size()) % config::kNumSingleTrees;
-          batchs[Tree_id].Delete(key);
-          batchs_num[Tree_id]++;
-        } else {
-          return Status::Corruption("bad WriteBatch Delete");
-        }
-        break;
-      default:
-        return Status::Corruption("unknown WriteBatch tag");
-    }
-  }
-  if (found != WriteBatchInternal::Count(this)) {
-    return Status::Corruption("WriteBatch has wrong count");
-  } else {
-    return Status::OK();
-  }
-}
-
 void WriteBatch::Put(const Slice& key, const Slice& value) {
-  WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
+  WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);  //put一条数据，则把rep_.count加1
   rep_.push_back(static_cast<char>(kTypeValue));
   PutLengthPrefixedSlice(&rep_, key);
   PutLengthPrefixedSlice(&rep_, value);
@@ -189,7 +107,7 @@ void WriteBatch::Delete(const Slice& key) {
   rep_.push_back(static_cast<char>(kTypeDeletion));
   PutLengthPrefixedSlice(&rep_, key);
 }
-
+//批量添加一个batch，而不是单个条目
 void WriteBatch::Append(const WriteBatch& source) {
   WriteBatchInternal::Append(this, &source);
 }
@@ -215,7 +133,7 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;
   inserter.sequence_ = WriteBatchInternal::Sequence(b);
   inserter.mem_ = memtable;
-  return b->Iterate(&inserter);
+  return b->Iterate(&inserter); //调用Iterate 逐一加入memtable
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {

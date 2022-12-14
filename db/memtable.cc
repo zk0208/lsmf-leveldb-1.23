@@ -73,21 +73,25 @@ class MemTableIterator : public Iterator {
 
 Iterator* MemTable::NewIterator() { return new MemTableIterator(&table_); }
 
+//用户key转化为包含 userkey + sequence + valuetype 的 internalkey
+//internalkey size(varint32) + internalkey + valuesize(varint32) + value
 void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
                    const Slice& value) {
   // Format of an entry is concatenation of:
   //  key_size     : varint32 of internal_key.size()
   //  key bytes    : char[internal_key.size()]
+  //  tag          : uint64((sequence << 8) | type)
   //  value_size   : varint32 of value.size()
   //  value bytes  : char[value.size()]
   size_t key_size = key.size();
   size_t val_size = value.size();
   size_t internal_key_size = key_size + 8;
+  //编码后的数据总长度
   const size_t encoded_len = VarintLength(internal_key_size) +
                              internal_key_size + VarintLength(val_size) +
                              val_size;
-  char* buf = arena_.Allocate(encoded_len);
-  char* p = EncodeVarint32(buf, internal_key_size);
+  char* buf = arena_.Allocate(encoded_len); //分配内存
+  char* p = EncodeVarint32(buf, internal_key_size); //写入key size
   std::memcpy(p, key.data(), key_size);
   p += key_size;
   EncodeFixed64(p, (s << 8) | type);
@@ -95,11 +99,12 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   p = EncodeVarint32(p, val_size);
   std::memcpy(p, value.data(), val_size);
   assert(p + val_size == buf + encoded_len);
-  table_.Insert(buf);
+  table_.Insert(buf); //将组装好的数据项写入跳表
 }
 
+//mem读取入口，查询的key是lookupkey，返回状态s和value
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
-  Slice memkey = key.memtable_key();
+  Slice memkey = key.memtable_key();  //将key按照lookupkey的地址解析成 mem 中的 internalkey
   Table::Iterator iter(&table_);
   iter.Seek(memkey.data());
   if (iter.Valid()) {
@@ -116,16 +121,16 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
     uint32_t key_length;
     const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
     if (comparator_.comparator.user_comparator()->Compare(
-            Slice(key_ptr, key_length - 8), key.user_key()) == 0) {
+            Slice(key_ptr, key_length - 8), key.user_key()) == 0) { //找到相同的userkey,再验证sequence和valuetype
       // Correct user key
-      const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
-      switch (static_cast<ValueType>(tag & 0xff)) {
-        case kTypeValue: {
+      const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8); //解码读到的sequence和type
+      switch (static_cast<ValueType>(tag & 0xff)) { //解析类型、最后8位
+        case kTypeValue: {  //读value
           Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
           value->assign(v.data(), v.size());
           return true;
         }
-        case kTypeDeletion:
+        case kTypeDeletion: //返回数据不存在
           *s = Status::NotFound(Slice());
           return true;
       }

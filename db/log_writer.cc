@@ -31,6 +31,7 @@ Writer::Writer(WritableFile* dest, uint64_t dest_length)
 
 Writer::~Writer() = default;
 
+//log文件的写入入口，log的每次写入为追加record（即下述参数slice ）
 Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();
   size_t left = slice.size();
@@ -39,11 +40,11 @@ Status Writer::AddRecord(const Slice& slice) {
   // is empty, we still want to iterate once to emit a single
   // zero-length record
   Status s;
-  bool begin = true;
+  bool begin = true;  //判断是不是该record第一次写入文件
   do {
-    const int leftover = kBlockSize - block_offset_;
+    const int leftover = kBlockSize - block_offset_;  //当前block所剩空间
     assert(leftover >= 0);
-    if (leftover < kHeaderSize) {
+    if (leftover < kHeaderSize) { //block剩余空间不足7B，则将剩下的填充 0
       // Switch to a new block
       if (leftover > 0) {
         // Fill the trailer (literal below relies on kHeaderSize being 7)
@@ -60,7 +61,7 @@ Status Writer::AddRecord(const Slice& slice) {
     const size_t fragment_length = (left < avail) ? left : avail;
 
     RecordType type;
-    const bool end = (left == fragment_length);
+    const bool end = (left == fragment_length); //判断类型，根据begin、end值判断
     if (begin && end) {
       type = kFullType;
     } else if (begin) {
@@ -78,7 +79,7 @@ Status Writer::AddRecord(const Slice& slice) {
   } while (s.ok() && left > 0);
   return s;
 }
-
+//构造record头部，追加写入log文件，参数为record类型、写入slice的地址和长度
 Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
                                   size_t length) {
   assert(length <= 0xffff);  // Must fit in two bytes
@@ -100,7 +101,7 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
   if (s.ok()) {
     s = dest_->Append(Slice(ptr, length));
     if (s.ok()) {
-      s = dest_->Flush();
+      s = dest_->Flush(); //刷入文件
     }
   }
   block_offset_ += kHeaderSize + length;
