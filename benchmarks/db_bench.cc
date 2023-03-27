@@ -239,9 +239,15 @@ static void AppendWithSpace(std::string* str, Slice msg) {
 class Stats {
  private:
   double start_;
+  double cmp_start_;  //测试scan时，seek 与 cmp 中间时间
+  double cmp_stop_;  //测试scan时，cmp(next)结束时间
   double finish_;
   double seconds_;
+  double seek_sec_; // seek的时间占比
+  double cmp_sec_; // cmp的时间
   int done_;
+  int done_seek_;  // seek 的执行次数
+  int done_cmp_;  // seek 的执行次数
   int next_report_;
   int64_t bytes_;
   double last_op_finish_;
@@ -254,19 +260,42 @@ class Stats {
   void Start() {
     next_report_ = 100;
     hist_.Clear();
-    done_ = 0;
+    done_ = done_cmp_ = done_seek_ = 0;
     bytes_ = 0;
-    seconds_ = 0;
+    seconds_ = seek_sec_ = cmp_sec_ = 0;
     message_.clear();
-    start_ = finish_ = last_op_finish_ = g_env->NowMicros();
+    start_ = finish_ = last_op_finish_ = cmp_start_ = cmp_stop_ = g_env->NowMicros();
+  }
+
+  void cmp_start_add() {
+    cmp_start_ = g_env->NowMicros();
+    seek_sec_ += cmp_start_ - cmp_stop_;
+  }
+
+  void FinishedSeekSingleOp() {
+    done_seek_++;
+  } 
+
+  void cmp_stop_add() {
+    cmp_stop_ = g_env->NowMicros();
+    cmp_sec_ += cmp_stop_ - cmp_start_;
+  }
+
+  void FinishedcmpSingleOp() {
+    done_cmp_++;
   }
 
   void Merge(const Stats& other) {
     hist_.Merge(other.hist_);
     done_ += other.done_;
+    done_seek_ += other.done_seek_;
+    done_cmp_ += other.done_cmp_;
     bytes_ += other.bytes_;
     seconds_ += other.seconds_;
+    seek_sec_ += other.seek_sec_;
+    cmp_sec_ += other.cmp_sec_;
     if (other.start_ < start_) start_ = other.start_;
+    if (other.cmp_start_ > cmp_start_) cmp_start_ = other.cmp_start_;
     if (other.finish_ > finish_) finish_ = other.finish_;
 
     // Just keep the messages from one thread
@@ -319,6 +348,7 @@ class Stats {
     // Pretend at least one op was done in case we are running a benchmark
     // that does not call FinishedSingleOp().
     if (done_ < 1) done_ = 1;
+    if (done_seek_ < 1) done_seek_ = 1;
 
     std::string extra;
     if (bytes_ > 0) {
@@ -335,6 +365,15 @@ class Stats {
     std::fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
                  name.ToString().c_str(), seconds_ * 1e6 / done_,
                  (extra.empty() ? "" : " "), extra.c_str());
+
+    if (seek_sec_ != 0 || cmp_sec_ != 0) {
+      std::string name1 = name.ToString() + " seek";
+      std::string name2 = "cmp";
+      std::fprintf(stdout, "%-12s : %11.3f micros/op; %-6s : %11.3f micros/op;\n",
+                 name1.c_str(), seek_sec_ / done_seek_,
+                 name2.c_str(), cmp_sec_ / done_cmp_);
+    }
+
     if (FLAGS_histogram) {
       std::fprintf(stdout, "Microseconds per op:\n%s\n",
                    hist_.ToString().c_str());
@@ -920,27 +959,33 @@ class Benchmark {
     int found = 0;
     KeyBuffer key;
     int64_t bytes = 0;
+    Iterator* iter = db_->NewIterator(options);
     for (int i = 0; i < reads_; i++) {
-      Iterator* iter = db_->NewIterator(options);
+      
       const int k = thread->rand.Uniform(FLAGS_num);
       key.Set(k);
       iter->Seek(key.slice());
-      //if (iter->Valid() && iter->key() == key.slice()) found++;
-      if (iter->Valid()) {
-        if (iter->key() == key.slice())
-          found++;
-        for (int j = 0; j < scanLength_ && iter->Valid(); j++, iter->Next()) {
-          bytes += iter->key().size() + iter->value().size();
-        }
+      // printf("%s\n",key.slice().data());
+      if (iter->Valid() && iter->key() == key.slice()) found++;
+      thread->stats.FinishedSeekSingleOp();
+      thread->stats.cmp_start_add();
+
+      for (int j = 0; j < scanLength_ && iter->Valid(); j++, iter->Next()) {
+        // printf("%s  ",iter->key().data());
+        bytes += iter->key().size() + iter->value().size();
+        thread->stats.FinishedcmpSingleOp();
       }
-      delete iter;
+      thread->stats.cmp_stop_add();
       thread->stats.FinishedSingleOp();
     }
+    // iter->printstats();
+    delete iter;
     thread->stats.AddBytes(bytes);
     char msg[100];
     snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
     thread->stats.AddMessage(msg);
   }
+
 
   void ScanSeq(ThreadState* thread) {
     ReadOptions options;
