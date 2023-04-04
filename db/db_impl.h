@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_DB_DB_IMPL_H_
 #define STORAGE_LEVELDB_DB_DB_IMPL_H_
 
+#include "db/memtable.h"
+#include "db/version_set.h"
 #include <atomic>
 #include <deque>
 #include <set>
@@ -13,12 +15,37 @@
 #include "db/dbformat.h"
 #include "db/log_writer.h"
 #include "db/snapshot.h"
+#include <vector>
 #include "leveldb/db.h"
 #include "leveldb/env.h"
+#include "leveldb/iterator.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
 namespace leveldb {
+
+namespace iterstateclean
+{
+  struct IterState {
+    port::Mutex* const mu;
+    Version* const version GUARDED_BY(mu);
+    MemTable* const mem GUARDED_BY(mu);
+    MemTable* const imm GUARDED_BY(mu);
+
+    IterState(port::Mutex* mutex, MemTable* mem, MemTable* imm, Version* version)
+        : mu(mutex), version(version), mem(mem), imm(imm) {}
+  };
+
+  static void CleanupIteratorState(void* arg1, void* arg2) {
+    IterState* state = reinterpret_cast<IterState*>(arg1);
+    state->mu->Lock();
+    state->mem->Unref();
+    if (state->imm != nullptr) state->imm->Unref();
+    state->version->Unref();
+    state->mu->Unlock();
+    delete state;
+  }
+}
 
 class DBImpl;
 class MemTable;
@@ -28,6 +55,7 @@ class VersionEdit;
 class VersionSet;
 
 class SingleTree{
+
  public:
   SingleTree(DBImpl * db, uint32_t id);
 
@@ -114,9 +142,9 @@ class SingleTree{
     int64_t nums;
   };
 
-  Iterator* NewInternalIterator(const ReadOptions&,
-                                SequenceNumber* latest_snapshot,
-                                uint32_t* seed);
+  void NewInternalIterator(const ReadOptions&, SequenceNumber* latest_snapshot,
+                                uint32_t* seed,
+                          std::vector<Iterator*>& list,std::vector<iterstateclean::IterState*>& cleanup);
 
 
   // Compact the in-memory write buffer to disk.  Switches to a new

@@ -2,71 +2,55 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/merger.h"
+#include "table/merger_tree.h"
+#include <atomic>
+#include <cassert>
 #include <cstdint>
-#include <map>
-#include <string>
+#include <thread>
+#include <vector>
 
-#include "db/db_impl.h"
-#include "db/dbformat.h"
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "leveldb/slice.h"
 #include "table/iterator_wrapper.h"
 
 namespace leveldb {
 
 namespace {
-  // enum level{mem,l0,l1,l2,l3,l4,l5,l6,l7};
-  // std::map<std::string, level> levelstrtonum{
-  //   {"mem",mem},{"L0",l0},{"L1",l1},{"L2",l2},
-  //   {"L3",l3},{"L4",l4},{"L5",l5},{"L6",l6},{"L7",l7}};
-
-class MergingIterator : public Iterator {
+class MergingTreeIterator : public Iterator {
  public:
-  MergingIterator(const Comparator* comparator, Iterator** children, int n)
+  MergingTreeIterator(const Comparator* comparator, Iterator** children, int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
-        // child_sign_(new std::string[n]),
-        // levelnum_(new uint64_t[config::kNumLevels + 1]()),
-        // numlog_(0),
         T_env(leveldb::Env::Default()),
         itertime_(iterTime()),
         n_(n),
         current_(nullptr),
-        direction_(kForward) {
+        direction_(kForward),
+        done_(true),
+        work_(0),
+        optype_(opnone),
+        tar_("") {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
+    THWork();
   }
-  // MergingIterator(const Comparator* comparator, Iterator** children, std::string* iterSign, 
-  //                   const std::string& db_name, int n)
-  //     : comparator_(comparator),
-  //       children_(new IteratorWrapper[n]),
-  //       child_sign_(new std::string[n]),
-  //       levelnum_(new uint64_t[config::kNumLevels + 1]()),
-  //       numlog_(0),
-  //       T_env(leveldb::Env::Default()),
-  //       itertime_(iterTime()),
-  //       n_(n),
-  //       current_(nullptr),
-  //       direction_(kForward) {
-  //   for (int i = 0; i < n; i++) {
-  //     children_[i].Set(children[i]);
-  //     child_sign_[i] = iterSign[i];
-  //   }
-  //   T_env->NewLogger(db_name+"/iterlog", &iterlog_);
-  // }
 
-  ~MergingIterator() override { 
-    // printstats();
-    // Log(iterlog_, "num: %ld %ld %ld %ld %ld %ld %ld %ld", 
-    //     levelnum_[0],levelnum_[1],levelnum_[2],levelnum_[3],
-    //     levelnum_[4],levelnum_[5],levelnum_[6],levelnum_[7]);
-    // delete [] child_sign_;
-    // delete [] levelnum_; 
-    delete[] children_;
-    }
+  ~MergingTreeIterator() override 
+  {
+    printstats();
+    done_ = false;
+    if (!threadall_.empty()) {
+      for (auto & t : threadall_) {
+        if(t!=nullptr && t->joinable())
+          t->join();
+        delete t;
+      }
+    } 
+    delete[] children_; 
+  }
 
   bool Valid() const override { return (current_ != nullptr); }
 
@@ -85,20 +69,38 @@ class MergingIterator : public Iterator {
     FindLargest();
     direction_ = kReverse;
   }
-
+  /*
+  void Seek(const Slice& target) override {
+    thread_trees.clear();
+    for (int i = 0; i < n_; i++) {
+      thread_trees.emplace_back([this,i,target](){
+        children_[i].Seek(target);
+      });
+    }
+    for (auto &t: thread_trees) {
+      t.join();
+    }
+    FindSmallest();
+    direction_ = kForward;
+  }
+  */
   void Seek(const Slice& target) override {
     double t1,t2,t3;
     t1 = T_env->NowMicros();
-    for (int i = 0; i < n_; i++) {
-      children_[i].Seek(target);
+
+    work_ = ((1 << n_) - 1);
+    optype_ = seek;
+    tar_ = target;
+    while (work_) {
     }
+
     t2 = T_env ->NowMicros();
     FindSmallest();
     t3 = T_env->NowMicros();
     ++itertime_.seek_num_;
     itertime_.seek_ += t2 - t1;
     ++itertime_.merge_num_;
-    itertime_.merge_ += t3 - t2;
+    itertime_.merge_tree_ += t3 - t2;
     direction_ = kForward;
   }
 
@@ -125,7 +127,7 @@ class MergingIterator : public Iterator {
       }
       direction_ = kForward;
     }
-
+    
     current_->Next();
     t2 = T_env->NowMicros();
     FindSmallest();
@@ -133,7 +135,7 @@ class MergingIterator : public Iterator {
     ++itertime_.next_num_;
     itertime_.next_ += t2 - t1;
     ++itertime_.merge_num_;
-    itertime_.merge_ += t3 - t2;
+    itertime_.merge_tree_ += t3 - t2;
   }
 
   void Prev() override {
@@ -185,41 +187,32 @@ class MergingIterator : public Iterator {
     }
     return status;
   }
+
   //统计iter时间占比
   leveldb::Env* T_env = nullptr;
-  // leveldb::Logger * iterlog_ = nullptr;
-
   struct iterTime
   {
-    iterTime(): seek_(0), merge_(0),next_(0),seek_num_(0),next_num_(0),merge_num_(0){};
-    double seek_; //level iters seek() time
-    double merge_;  //iters findsmallest()
-    double next_; 
+    iterTime(): merge_tree_(0), next_(0),seek_(0),seek_num_(0),next_num_(0),merge_num_(0){};
+
+    double merge_tree_; //树数目的merge对比
+    double next_;
+    double seek_;
     uint64_t seek_num_;
     uint64_t next_num_;
     uint64_t merge_num_;
-
-    void calculate(const std::string & sign, double t){
-      if (sign == "seek") {
-        seek_ += t;
-        ++seek_num_;
-      } else if (sign == "merge") {
-        merge_ += t;
-        ++merge_num_;
-      } else if (sign == "next") {
-        next_ += t;
-        ++next_num_;
-      }
-    }
   };
+
+  void THWork();
 
  private:
   // Which direction is the iterator moving?
   enum Direction { kForward, kReverse };
+  enum Op {opnone, seek, seekfirst, seeklast};
 
   void FindSmallest();
   void FindLargest();
-  // void calnum(int level);
+  bool JudgeWorkNoEnd(int id);
+  void SetBitZero(int id);
   void printstats();
 
   // We might want to use a heap in case there are lots of children.
@@ -227,35 +220,35 @@ class MergingIterator : public Iterator {
   // of children in leveldb.
   const Comparator* comparator_;
   IteratorWrapper* children_;
-  // std::string * child_sign_;
-  // uint64_t* levelnum_;  //每一层查找数目
-  // uint64_t numlog_;
   iterTime itertime_;
   int n_;
   IteratorWrapper* current_;
   Direction direction_;
+
+  //线程相关
+  bool done_; //线程结束的标志
+  std::atomic_uint work_; //work结束的标志
+  Op optype_;
+  Slice tar_; //seek目标
+  std::vector<std::thread*> threadall_;
 };
 
-void MergingIterator::FindSmallest() {
+void MergingTreeIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
-  // int select = -1;
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
       if (smallest == nullptr) {
         smallest = child;
-        // select = i;
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         smallest = child;
-        // select = i;
       }
     }
   }
-  // calnum(select);  
   current_ = smallest;
 }
 
-void MergingIterator::FindLargest() {
+void MergingTreeIterator::FindLargest() {
   IteratorWrapper* largest = nullptr;
   for (int i = n_ - 1; i >= 0; i--) {
     IteratorWrapper* child = &children_[i];
@@ -270,62 +263,69 @@ void MergingIterator::FindLargest() {
   current_ = largest;
 }
 
-// void MergingIterator::calnum(int level){
-//   ++numlog_;
-//   if (level != -1 && numlog_ <= 10000) 
-//   {
-//     Log(iterlog_, "level:  %s", child_sign_[level].c_str());
-//   }
-//   if (level == -1)
-//     return;
-//   switch (levelstrtonum[child_sign_[level]]) 
-//   {
-//     case mem:
-//       ++levelnum_[0];
-//       break;
-//     case l0:
-//       ++levelnum_[1];
-//       break;
-//     case l1:
-//       ++levelnum_[2];
-//       break;
-//     case l2:
-//       ++levelnum_[3];
-//       break;
-//     case l3:
-//       ++levelnum_[4];
-//       break;
-//     case l4:
-//       ++levelnum_[5];
-//       break;
-//     case l5:
-//       ++levelnum_[6];
-//       break;
-//     case l6:
-//       ++levelnum_[7];
-//       break;
-//     default:
-//       break;
-//   }
-// }
-
-void MergingIterator::printstats() {
+void MergingTreeIterator::printstats() {
   std::string value;
   char buf[200];
   std::snprintf(buf, sizeof(buf),
                 "                               iters_time\n"
-                "Seek  next  merge(iter_level) seek_num next_num merge_num\n"
-                "----------------------------------------------------------------\n");
+                "seek_  next_ merge_(iter_tree) seek_num_ next_num_ merge_num_\n"
+                "-------------------------------------------------------\n");
   value.append(buf);
   std::snprintf(buf, sizeof(buf), "%8.0f %8.0f %8.0f %10ld %10ld %10ld\n",
-                itertime_.seek_,itertime_.next_,itertime_.merge_,
+                itertime_.seek_,itertime_.next_,itertime_.merge_tree_,
                 itertime_.seek_num_,itertime_.next_num_,itertime_.merge_num_);
   value.append(buf);
   std::fprintf(stdout, "\n%s\n", value.c_str());
 }
+
+bool MergingTreeIterator::JudgeWorkNoEnd(int id){
+  return ( (work_>> id ) & 1 ) != 0;
+}
+void MergingTreeIterator::SetBitZero(int id){
+  uint  nbit = ~(1 << id);
+  work_ &= nbit;
+}
+void MergingTreeIterator::THWork(){
+  if(threadall_.empty()){
+    threadall_.resize(n_);
+    for (int i = 0; i < n_; i++) {
+      threadall_.emplace_back(new std::thread(
+        [&,i]() {
+          while(done_) { //done_就是线程结束标志
+            if (JudgeWorkNoEnd(i)) {
+              switch (optype_) {
+                case seek:
+                {
+                  children_[i].Seek(tar_);
+                  SetBitZero(i);
+                  break;
+                }
+                case seekfirst:
+                {
+                  children_[i].SeekToFirst();
+                  SetBitZero(i);
+                  break;
+                }
+                case seeklast:
+                {
+                  children_[i].SeekToLast();
+                  SetBitZero(i);
+                  break;
+                }
+                case opnone:
+                default:
+                  break;                
+              }
+            }
+          }
+        }
+      ));
+    }
+  }
+}
 }  // namespace
 
-Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
+Iterator* NewMergingTreeIterator(const Comparator* comparator, Iterator** children,
                              int n) {
   assert(n >= 0);
   if (n == 0) {
@@ -333,20 +333,7 @@ Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
   } else if (n == 1) {
     return children[0];
   } else {
-    return new MergingIterator(comparator, children, n);
+    return new MergingTreeIterator(comparator, children, n);
   }
 }
-
-// Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children, std::string* iterSign,
-//                              const std::string& db_name, int n) {
-//   assert(n >= 0);
-//   if (n == 0) {
-//     return NewEmptyIterator();
-//   } else if (n == 1) {
-//     return children[0];
-//   } else {
-//     return new MergingIterator(comparator, children, iterSign, db_name, n);
-//   }
-// }
-
 }  // namespace leveldb

@@ -163,6 +163,8 @@ target_sources(leveldb
     "table/format.h"
     "table/iterator_wrapper.h"
     "table/iterator.cc"
+    "table/merger_tree.cc"
+    "table/merger_tree.h"
     "table/merger.cc"
     "table/merger.h"
     "table/table_builder.cc"

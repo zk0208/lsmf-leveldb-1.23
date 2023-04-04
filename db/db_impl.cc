@@ -24,6 +24,7 @@
 #include "db/write_batch_internal.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
+#include "leveldb/iterator.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
 #include "leveldb/table.h"
@@ -31,6 +32,7 @@
 #include "port/port.h"
 #include "table/block.h"
 #include "table/merger.h"
+#include "table/merger_tree.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
@@ -1035,58 +1037,52 @@ Status SingleTree::DoCompactionWork(CompactionState* compact) {
   Log(db_->options_.info_log, "SingleTree %u, compacted to: %s",id_, versions_->LevelSummary(&tmp));
   return status;
 }
-
-namespace {
-
-struct IterState {
-  port::Mutex* const mu;
-  Version* const version GUARDED_BY(mu);
-  MemTable* const mem GUARDED_BY(mu);
-  MemTable* const imm GUARDED_BY(mu);
-
-  IterState(port::Mutex* mutex, MemTable* mem, MemTable* imm, Version* version)
-      : mu(mutex), version(version), mem(mem), imm(imm) {}
-};
-
-static void CleanupIteratorState(void* arg1, void* arg2) {
-  IterState* state = reinterpret_cast<IterState*>(arg1);
-  state->mu->Lock();
-  state->mem->Unref();
-  if (state->imm != nullptr) state->imm->Unref();
-  state->version->Unref();
-  state->mu->Unlock();
-  delete state;
-}
-
-}  // anonymous namespace
-
-Iterator* SingleTree::NewInternalIterator(const ReadOptions& options,
-                                      SequenceNumber* latest_snapshot,
-                                      uint32_t* seed) {
+void SingleTree::NewInternalIterator(const ReadOptions& options, SequenceNumber* latest_snapshot,
+                              uint32_t* seed,
+                              std::vector<Iterator*>&list,std::vector<iterstateclean::IterState*>& cleanup) {
   mutex_.Lock();
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
-  std::vector<Iterator*> list;
+  // std::vector<Iterator*> list;
+  // list.push_back(mem_->NewIterator());
+  // mem_->Ref();
+  // if (imm_ != nullptr) {
+  //   list.push_back(imm_->NewIterator());
+  //   imm_->Ref();
+  // }
+  // ReadOptions read_option = options;
+  // read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
+  // versions_->current()->AddIterators(read_option, &list);
+  // Iterator* internal_iter =
+  //     NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  // versions_->current()->Ref();
+
+  std::vector<std::string> iterSignList;
   list.push_back(mem_->NewIterator());
+  iterSignList.push_back("mem");
   mem_->Ref();
   if (imm_ != nullptr) {
     list.push_back(imm_->NewIterator());
+    iterSignList.push_back("mem");
     imm_->Ref();
   }
   ReadOptions read_option = options;
   read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
-  versions_->current()->AddIterators(read_option, &list);
-  Iterator* internal_iter =
-      NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  versions_->current()->AddIterators(read_option, &list, &iterSignList);
+  // Iterator* internal_iter =
+  //     NewMergingIterator(&internal_comparator_, &list[0], &iterSignList[0], db_->dbname_, list.size());
+  // Iterator* internal_iter =
+  //   NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
 
-  IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
-  internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, nullptr);
+
+  // IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
+  cleanup.push_back(new iterstateclean::IterState(&mutex_, mem_, imm_, versions_->current()));
 
   *seed = ++seed_;
   mutex_.Unlock();
-  return internal_iter;
+  return ;
 }
 
 int64_t SingleTree::TEST_MaxNextLevelOverlappingBytes() {
@@ -1342,15 +1338,19 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
 
   // Collect together all needed child iterators
   std::vector<Iterator*> list;
+  std::vector<iterstateclean::IterState*>clean_list;
   uint32_t seed_single = 0;
   for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
-    Iterator* it = singleTrees_[i]->NewInternalIterator(options, latest_snapshot, &seed_single);
+    singleTrees_[i]->NewInternalIterator(options, latest_snapshot, &seed_single,list,clean_list);
     *seed += seed_single;
-    list.push_back(it);
   }
 
-  Iterator* internal_iter =
-      NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  Iterator* internal_iter = 
+        NewMergingTreeIterator(&internal_comparator_, &list[0], list.size());
+
+  for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
+    internal_iter->RegisterCleanup(iterstateclean::CleanupIteratorState,clean_list[i],nullptr);
+  }
 
   mutex_.Unlock();
   return internal_iter;
@@ -1857,11 +1857,11 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   impl->mutex_.Unlock();
   if (s.ok()) {
     impl->RemoveObsoleteFiles();
-    for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
-      impl->singleTrees_[i]->mutex_.Lock();
-      impl->singleTrees_[i]->MaybeScheduleCompaction();
-      impl->singleTrees_[i]->mutex_.Unlock();
-    }
+    // for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
+    //   impl->singleTrees_[i]->mutex_.Lock();
+    //   impl->singleTrees_[i]->MaybeScheduleCompaction();
+    //   impl->singleTrees_[i]->mutex_.Unlock();
+    // }
   }
   //impl->mutex_.Unlock();
   if (s.ok()) {

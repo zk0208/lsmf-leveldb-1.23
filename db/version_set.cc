@@ -226,13 +226,14 @@ Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
       new LevelFileNumIterator(vset_->icmp_, &files_[level]), &GetFileIterator,
       vset_->table_cache_, options);
 }
-
+//修改计算iter时间占比
 void Version::AddIterators(const ReadOptions& options,
-                           std::vector<Iterator*>* iters) {
+                           std::vector<Iterator*>* iters, std::vector<std::string>* iters_sign) {
   // Merge all level zero files together since they may overlap
   for (size_t i = 0; i < files_[0].size(); i++) {
     iters->push_back(vset_->table_cache_->NewIterator(
         options, files_[0][i]->number, files_[0][i]->file_size));
+    iters_sign->push_back("L0");
   }
 
   // For levels > 0, we can use a concatenating iterator that sequentially
@@ -241,6 +242,8 @@ void Version::AddIterators(const ReadOptions& options,
   for (int level = 1; level < config::kNumLevels; level++) {
     if (!files_[level].empty()) {
       iters->push_back(NewConcatenatingIterator(options, level));
+      // iters_sign->push_back("Ln");
+      iters_sign->push_back("L"+ std::to_string(level));
     }
   }
 }
