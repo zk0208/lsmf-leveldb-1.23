@@ -31,6 +31,7 @@
 #include "port/port.h"
 #include "table/block.h"
 #include "table/merger.h"
+#include "table/merger_tree.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
@@ -1067,18 +1068,38 @@ Iterator* SingleTree::NewInternalIterator(const ReadOptions& options,
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
+  // std::vector<Iterator*> list;
+  // list.push_back(mem_->NewIterator());
+  // mem_->Ref();
+  // if (imm_ != nullptr) {
+  //   list.push_back(imm_->NewIterator());
+  //   imm_->Ref();
+  // }
+  // ReadOptions read_option = options;
+  // read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
+  // versions_->current()->AddIterators(read_option, &list);
+  // Iterator* internal_iter =
+  //     NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  // versions_->current()->Ref();
+
+  //加上属于什么iter的sign
   std::vector<Iterator*> list;
+  std::vector<std::string> iterSignList;
   list.push_back(mem_->NewIterator());
+  iterSignList.push_back("mem");
   mem_->Ref();
   if (imm_ != nullptr) {
     list.push_back(imm_->NewIterator());
+    iterSignList.push_back("mem");
     imm_->Ref();
   }
   ReadOptions read_option = options;
   read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
-  versions_->current()->AddIterators(read_option, &list);
+  versions_->current()->AddIterators(options, &list, &iterSignList);
   Iterator* internal_iter =
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
+  // Iterator* internal_iter =
+  //   NewMergingIterator(&internal_comparator_, &list[0], &iterSignList[0], dbname_, list.size());
   versions_->current()->Ref();
 
   IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
@@ -1350,7 +1371,7 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
   }
 
   Iterator* internal_iter =
-      NewMergingIterator(&internal_comparator_, &list[0], list.size());
+      NewMergingTreeIterator(&internal_comparator_, &list[0], list.size());
 
   mutex_.Unlock();
   return internal_iter;

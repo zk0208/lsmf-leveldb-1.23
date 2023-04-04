@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef STORAGE_LEVELDB_TABLE_MERGER_H_
-#define STORAGE_LEVELDB_TABLE_MERGER_H_
+#ifndef STORAGE_LEVELDB_TABLE_MERGER_TREE_H_
+#define STORAGE_LEVELDB_TABLE_MERGER_TREE_H_
 
 #include <string>
 namespace leveldb {
@@ -19,11 +19,8 @@ class Iterator;
 // key is present in K child iterators, it will be yielded K times.
 //
 // REQUIRES: n >= 0
-Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
+Iterator* NewMergingTreeIterator(const Comparator* comparator, Iterator** children,
                              int n);
-
-// Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children, 
-//                             std::string* iterSign, const std::string& db_name, int n);
 
 }  // namespace leveldb
 

@@ -71,7 +71,8 @@ class Version {
   // Append to *iters a sequence of iterators that will
   // yield the contents of this Version when merged together.
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
-  void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
+  // void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
+  void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters, std::vector<std::string>* iters_sign);
 
   Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
              GetStats* stats);
