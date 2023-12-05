@@ -965,20 +965,20 @@ class Benchmark {
       const int k = thread->rand.Uniform(FLAGS_num);
       key.Set(k);
       iter->Seek(key.slice());
-      // printf("%s\n",key.slice().data());
+      // std::cout<< key.slice().data() << std::endl;
       if (iter->Valid() && iter->key() == key.slice()) found++;
       thread->stats.FinishedSeekSingleOp();
       thread->stats.cmp_start_add();
 
       for (int j = 0; j < scanLength_ && iter->Valid(); j++, iter->Next()) {
-        // printf("%s  ",iter->key().data());
+        // std::cout<< iter->key().ToString() << "  ";
         bytes += iter->key().size() + iter->value().size();
         thread->stats.FinishedcmpSingleOp();
       }
+      // std::cout<< "\n" << i << "end" <<std::endl;
       thread->stats.cmp_stop_add();
       thread->stats.FinishedSingleOp();
     }
-    // iter->printstats();
     delete iter;
     thread->stats.AddBytes(bytes);
     char msg[100];

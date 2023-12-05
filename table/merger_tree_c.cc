@@ -4,10 +4,13 @@
 
 #include "table/merger_tree.h"
 #include "db/dbformat.h"
+#include <algorithm>
 #include <atomic>
 #include <cassert>
-#include <cstddef>
+#include <condition_variable>
 #include <cstdint>
+#include <iostream>
+#include <mutex>
 #include <sys/types.h>
 #include <thread>
 #include <vector>
@@ -26,35 +29,42 @@ class MergingTreeIterator : public Iterator {
   MergingTreeIterator(const Comparator* comparator, Iterator** children, int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
+        // child_sign_(new std::string[n]),
+        // levelnum_(new uint64_t[config::kNumLevels + 1]()),
+        // numlog_(0),
+        T_env(leveldb::Env::Default()),
+        itertime_(iterTime()),
         n_(n),
         current_(nullptr),
         direction_(kForward),
-        T_env(leveldb::Env::Default()),
-        itertime_(iterTime()),
-        optype_(opnone),
-        tar_(""),
         th_n_(config::kNumSingleTrees),
         done_(true),
-        work_((1 << th_n_) - 1),
-        child_idx_(n) {
+        work_(0),
+        child_idx_(n),
+        optype_(opnone),
+        tar_("") {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
-    THWork();
+   // THWork();
   }
 
   ~MergingTreeIterator() override 
   {
-    printstats();
-    done_ = false;
-    if (!threadall_.empty()) {
-      for (auto & t : threadall_) {
-        if(t!=nullptr && t->joinable())
-          t->join();
-        delete t;
-        t = NULL;
-      }
-    } 
+    // printstats();
+    // Log(iterlog_, "num: %ld %ld %ld %ld %ld %ld %ld %ld", 
+    //     levelnum_[0],levelnum_[1],levelnum_[2],levelnum_[3],
+    //     levelnum_[4],levelnum_[5],levelnum_[6],levelnum_[7]);
+    // delete [] child_sign_;
+    // delete [] levelnum_; 
+    // done_ = false;
+    // if (!threadall_.empty()) {
+    //   for (auto & t : threadall_) {
+    //     if(t!=nullptr && t->joinable())
+    //       t->join();
+    //     delete t;
+    //   }
+    // } 
     delete[] children_; 
   }
 
@@ -79,15 +89,28 @@ class MergingTreeIterator : public Iterator {
   void Seek(const Slice& target) override {
     double t1,t2,t3;
     t1 = T_env->NowMicros();
-    uint work_res = ((1 << th_n_) - 1);
-    optype_ = seek;
+    // uint work_res = (1 << th_n_) - 1;
+    // optype_ = seek;
     tar_ = target;
-    child_idx_.store(0);
-    {
-      std::unique_lock<std::mutex> lk(th_mu_);
-      work_ = 0;
-      th_cv_.wait(lk, [&]{return work_ == work_res;});
+
+    for (int i = 0; i < n_; i++) {
+      children_[i].Seek(tar_);
+      // threadall_.emplace_back(new std::thread( [&,i](){
+      //   children_[i].Seek(target);
+      // }));
     }
+    // for (auto &t: threadall_) {
+    //   t->join();
+    // }
+    // children_[0].Seek(tar_);
+    // child_idx_ = 0;
+    // {
+    //   std::unique_lock<std::mutex> lk(th_mu_);
+    //   work_.store(0);
+    //   cv.notify_all();
+    //   cv.wait(lk, [&]{return work_.load() == work_res;});
+    // }
+
     t2 = T_env ->NowMicros();
     FindSmallest();
     t3 = T_env->NowMicros();
@@ -106,7 +129,6 @@ class MergingTreeIterator : public Iterator {
     // true for all of the non-current_ children since current_ is
     // the smallest child and key() == current_->key().  Otherwise,
     // we explicitly position the non-current_ children.
-
     t1 = T_env->NowMicros();
 
     if (direction_ != kForward) {
@@ -197,6 +219,8 @@ class MergingTreeIterator : public Iterator {
     uint64_t merge_num_;
   };
 
+  void THWork();
+
  private:
   // Which direction is the iterator moving?
   enum Direction { kForward, kReverse };
@@ -205,16 +229,17 @@ class MergingTreeIterator : public Iterator {
   void FindSmallest();
   void FindLargest();
   
-  // 判断当前线程任务是否结束
-  bool JudgeWorkNoEnd(int id){
-    return (work_ >> id) & 1;
+  // 判断当前线程是否可以取child thread执行
+  bool JudgeWorkNoEnd(int& idx){
+    idx = child_idx_.fetch_add(1);
+    // printf("%d\n",idx);
+    return idx < n_;
   }
   // 表示某个线程work结束
   void SetBitOne(int id){
-    work_ |= (1 << id);
+    uint nbit = 1 << id;
+    work_ |= nbit;
   }
-  void THWork();  //创建线程
-
   void printstats();
 
   // We might want to use a heap in case there are lots of children.
@@ -222,22 +247,22 @@ class MergingTreeIterator : public Iterator {
   // of children in leveldb.
   const Comparator* comparator_;
   IteratorWrapper* children_;
+  iterTime itertime_;
   int n_;
   IteratorWrapper* current_;
   Direction direction_;
 
-  iterTime itertime_;
   //线程相关
-  Op optype_;
-  Slice tar_; //seek目标
-
   int th_n_;  //线程数目
   bool done_; //线程结束的标志
-  uint work_; //work结束的标志
+  std::atomic_uint work_; //work结束的标志
   std::atomic_uint child_idx_;  //当前空闲线程可以选的child索引
-  std::mutex th_mu_;
-  std::condition_variable th_cv_;
+  Op optype_;
+  Slice tar_; //seek目标
   std::vector<std::thread*> threadall_;
+  std::mutex th_mu_;
+  // std::condition_variable child_block_;
+  std::condition_variable cv;
 };
 
 void MergingTreeIterator::FindSmallest() {
@@ -270,50 +295,6 @@ void MergingTreeIterator::FindLargest() {
   current_ = largest;
 }
 
-void MergingTreeIterator::THWork(){
-  if (!threadall_.empty())
-    return;
-  for (int i = 0; i < th_n_; i++) {
-    threadall_.emplace_back( new std::thread([&,i]() {
-        while(done_) {
-          if (!JudgeWorkNoEnd(i)) {
-            while (true) {
-              auto idx = child_idx_.fetch_add(1);
-              if (idx < n_) {
-                switch (optype_) {
-                  case seek:
-                  {
-                    children_[idx].Seek(tar_);
-                    break;
-                  }
-                  case seekfirst:
-                  {
-                    children_[idx].SeekToFirst();
-                    break;
-                  }
-                  case seeklast:
-                  {
-                    children_[idx].SeekToLast();
-                    break;
-                  }
-                  case opnone:
-                  default:
-                    break;                
-                }
-              } else {
-                std::unique_lock<std::mutex> lk(th_mu_);
-                SetBitOne(i);
-                th_cv_.notify_one();
-                break;
-              }
-            }
-          }
-        }
-      }
-    ));
-  }
-}
-
 void MergingTreeIterator::printstats() {
   std::string value;
   char buf[200];
@@ -329,6 +310,48 @@ void MergingTreeIterator::printstats() {
   std::fprintf(stdout, "\n%s\n", value.c_str());
 }
 
+void MergingTreeIterator::THWork(){
+  if(threadall_.empty()){
+    for (int i = 0; i < th_n_; i++) {
+      threadall_.emplace_back(
+        new std::thread(
+        [&,i]() {
+          while(done_) { //done_就是线程结束标志
+            auto idx = child_idx_.fetch_add(1);
+            if (idx < n_) {
+              switch (optype_) {
+                case seek:
+                {
+                  children_[idx].Seek(tar_);
+                  break;
+                }
+                case seekfirst:
+                {
+                  children_[idx].SeekToFirst();
+                  break;
+                }
+                case seeklast:
+                {
+                  children_[idx].SeekToLast();
+                  break;
+                }
+                case opnone:
+                default:
+                  break;                
+              }
+            } else {
+              SetBitOne(i);
+              std::unique_lock<std::mutex> lk(th_mu_);
+              cv.notify_one();
+              cv.wait(lk, [&]{return  child_idx_.load() < n_;} );
+            }
+
+          }
+        }
+      ));
+    }
+  }
+}
 }  // namespace
 
 Iterator* NewMergingTreeIterator(const Comparator* comparator, Iterator** children,

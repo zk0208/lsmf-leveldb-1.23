@@ -24,6 +24,9 @@ Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
 
 // Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children, 
 //                             std::string* iterSign, const std::string& db_name, int n);
+
+Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children, 
+                            std::string* iterSign, int n);
                             
 }  // namespace leveldb
 

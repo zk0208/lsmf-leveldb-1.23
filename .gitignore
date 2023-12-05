@@ -2,7 +2,14 @@
 *.sw*
 .vscode
 .DS_Store
+.cache
 
 # Build directory.
 build/
 out/
+
+# cache
+.cache/
+
+#third_party
+third_party/*
