@@ -4,7 +4,9 @@
 
 #include "db/version_set.h"
 
+#include "db/dbformat.h"
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 
 #include "db/filename.h"
@@ -12,6 +14,7 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
+#include <unordered_map>
 #include "leveldb/env.h"
 #include "leveldb/table_builder.h"
 #include "table/merger.h"
@@ -193,6 +196,7 @@ class Version::LevelFileNumIterator : public Iterator {
   }
   Slice value() const override {
     assert(Valid());
+    EncodeFixed8(value_buf_, (*flist_)[index_]->pos_);
     EncodeFixed64(value_buf_, (*flist_)[index_]->number);
     EncodeFixed64(value_buf_ + 8, (*flist_)[index_]->file_size);
     return Slice(value_buf_, sizeof(value_buf_));
@@ -211,12 +215,12 @@ class Version::LevelFileNumIterator : public Iterator {
 static Iterator* GetFileIterator(void* arg, const ReadOptions& options,
                                  const Slice& file_value) {
   TableCache* cache = reinterpret_cast<TableCache*>(arg);
-  if (file_value.size() != 16) {
+  if (file_value.size() != 17) {
     return NewErrorIterator(
         Status::Corruption("FileReader invoked with unexpected value"));
   } else {
-    return cache->NewIterator(options, DecodeFixed64(file_value.data()),
-                              DecodeFixed64(file_value.data() + 8));
+    return cache->NewIterator(options, DecodeFixed8(file_value.data()), DecodeFixed64(file_value.data() + 1),
+                              DecodeFixed64(file_value.data() + 9));
   }
 }
 
@@ -232,7 +236,7 @@ void Version::AddIterators(const ReadOptions& options,
   // Merge all level zero files together since they may overlap
   for (size_t i = 0; i < files_[0].size(); i++) {
     iters->push_back(vset_->table_cache_->NewIterator(
-        options, files_[0][i]->number, files_[0][i]->file_size));
+        options, files_[0][i]->pos_, files_[0][i]->number, files_[0][i]->file_size));
     iters_sign->push_back("L0");
   }
 
@@ -272,7 +276,7 @@ static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
     if (s->ucmp->Compare(parsed_key.user_key, s->user_key) == 0) {
       s->state = (parsed_key.type == kTypeValue) ? kFound : kDeleted;
       if (s->state == kFound) {
-        s->value->assign(v.data(), v.size());
+        s->value->assign(v.data() + dynamicConfig::key_hash_bytes, v.size() - dynamicConfig::key_hash_bytes);
       }
     }
   }
@@ -356,7 +360,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
       state->last_file_read = f;
       state->last_file_read_level = level;
 
-      state->s = state->vset->table_cache_->Get(*state->options, f->number,
+      state->s = state->vset->table_cache_->Get(*state->options, f->pos_, f->number,
                                                 f->file_size, state->ikey,
                                                 &state->saver, SaveValue);
       if (!state->s.ok()) {
@@ -771,10 +775,10 @@ class VersionSet::Builder {
 
 VersionSet::VersionSet(const std::string& dbname, const Options* options,
                        TableCache* table_cache,
-                       const InternalKeyComparator* cmp, const uint32_t id)
+                       const InternalKeyComparator* cmp, const uint8_t id)
     : env_(options->env),
       dbname_(dbname),
-      sub_treedir_(dbname_+"/vol"+std::to_string(id+1)),
+      sub_treedir_(dbname_+"/vol"+std::to_string(id)),
       options_(options),
       table_cache_(table_cache),
       icmp_(*cmp),
@@ -944,30 +948,30 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
   return log->AddRecord(record);
 }
 Status VersionSet::WriteSnapshot(log::Writer* log,
-                                 std::vector<VersionSet*>& version_sets) {
+                                 std::unordered_map<uint8_t, VersionSet*>& version_sets) {
   // TODO: Break up into multiple records to reduce memory usage on recovery?
   Status s;
-  for (size_t i = 0; i < version_sets.size(); i++) {
-    Version* current = version_sets[i]->current_;
+  for (auto &vs : version_sets) {
+    Version* current = vs.second->current_;
     // Save metadata
     VersionEdit edit;
-    edit.setSingleTreeID(i);
-    edit.SetLastSequence(version_sets[i]->last_sequence_);
-    edit.SetLogNumber(version_sets[i]->log_number_);
-    edit.SetNextFile(version_sets[i]->next_file_number_);
+    edit.setSingleTreeID(vs.first);
+    edit.SetLastSequence(vs.second->last_sequence_);
+    edit.SetLogNumber(vs.second->log_number_);
+    edit.SetNextFile(vs.second->next_file_number_);
 
      // Save compaction pointers
     for (int level = 0; level < config::kNumLevels; level++) {
-      if (!version_sets[i]->compact_pointer_[level].empty()) {
+      if (!vs.second->compact_pointer_[level].empty()) {
         InternalKey key;
-        key.DecodeFrom(version_sets[i]->compact_pointer_[level]);
+        key.DecodeFrom(vs.second->compact_pointer_[level]);
         edit.SetCompactPointer(level, key);
       }
     }
 
     // Save files
     for (int level = 0; level < config::kNumLevels; level++) {
-      const std::vector<FileMetaData*>& files = version_sets[i]->current_->files_[level];
+      const std::vector<FileMetaData*>& files = vs.second->current_->files_[level];
       for (size_t i = 0; i < files.size(); i++) {
         const FileMetaData* f = files[i];
         edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
@@ -982,7 +986,7 @@ Status VersionSet::WriteSnapshot(log::Writer* log,
   return s;
 }
 Status VersionSet::InitManifest(Env* const env, const std::string dbname,
-                                std::vector<VersionSet*>& version_sets) {
+                                std::unordered_map<uint8_t, VersionSet*>& version_sets) {
   assert(descriptor_log_ == nullptr);
   // No reason to unlock *mu here since we only hit this path in the
   // first call to LogAndApply (when opening the database).
@@ -1011,7 +1015,7 @@ Status VersionSet::InitManifest(Env* const env, const std::string dbname,
   return s;
 }
 //恢复各个tree的版本信息
-Status VersionSet::Recover(bool* save_manifest, std::vector<VersionSet*>& version_sets) {
+Status VersionSet:: Recover(bool* save_manifest, std::unordered_map<uint8_t, VersionSet*>& version_sets) {
   struct LogReporter : public log::Reader::Reporter {
     Status* status;
     void Corruption(size_t bytes, const Status& s) override {
@@ -1047,9 +1051,13 @@ Status VersionSet::Recover(bool* save_manifest, std::vector<VersionSet*>& versio
   int read_records = 0;
 
   // Builder builder(this, current_);
-  std::vector<Builder*> builders(version_sets.size());
-  for (uint32_t i = 0; i < builders.size(); i++) {
-    builders[i] = new Builder(version_sets[i],version_sets[i]->current());
+  // std::vector<Builder*> builders(version_sets.size());
+  // for (uint32_t i = 0; i < builders.size(); i++) {
+  //   builders[i] = new Builder(version_sets[i],version_sets[i]->current());
+  // }
+  std::unordered_map<uint8_t, Builder*> builders;
+  for(auto &vs : version_sets){
+    builders[vs.first] = new Builder(vs.second, vs.second->current());
   }
   {
     LogReporter reporter;
@@ -1092,8 +1100,8 @@ Status VersionSet::Recover(bool* save_manifest, std::vector<VersionSet*>& versio
   }
 
   if (s.ok()) {
-    for (size_t i = 0; i < builders.size(); i++) {
-      Builder* builder = builders[i];
+    for (auto &bd : builders) {
+      auto builder = bd.second;
       if (!builder->have_log_number_) {
         s = Status::Corruption("no meta-lognumber entry in descriptor");
       } else if (!builder->have_last_sequence_) {
@@ -1104,21 +1112,21 @@ Status VersionSet::Recover(bool* save_manifest, std::vector<VersionSet*>& versio
         builder->prev_log_number_ = 0;
       }
 
-      version_sets[i]->MarkFileNumberUsed(builder->oldest_log_number_);
-      version_sets[i]->MarkFileNumberUsed(builder->prev_log_number_);
-      version_sets[i]->MarkFileNumberUsed(builder->log_number_);
+      version_sets[bd.first]->MarkFileNumberUsed(builder->oldest_log_number_);
+      version_sets[bd.first]->MarkFileNumberUsed(builder->prev_log_number_);
+      version_sets[bd.first]->MarkFileNumberUsed(builder->log_number_);
 
       if (s.ok()) {
-        Version* v = new Version(version_sets[i]);
+        Version* v = new Version(version_sets[bd.first]);
         builder->SaveTo(v);
         // Install recovered version
-        version_sets[i]->Finalize(v);
-        version_sets[i]->AppendVersion(v);
+        version_sets[bd.first]->Finalize(v);
+        version_sets[bd.first]->AppendVersion(v);
 
-        version_sets[i]->last_sequence_ = builder->last_sequence_;
-        version_sets[i]->log_number_ = builder->log_number_;
-        version_sets[i]->prev_log_number_ = builder->prev_log_number_;
-        version_sets[i]->oldest_log_number = builder->oldest_log_number_;
+        version_sets[bd.first]->last_sequence_ = builder->last_sequence_;
+        version_sets[bd.first]->log_number_ = builder->log_number_;
+        version_sets[bd.first]->prev_log_number_ = builder->prev_log_number_;
+        version_sets[bd.first]->oldest_log_number = builder->oldest_log_number_;
       }
     }
     manifest_file_number_ = next_file;
@@ -1135,7 +1143,7 @@ Status VersionSet::Recover(bool* save_manifest, std::vector<VersionSet*>& versio
     Log(version_sets[0]->options_->info_log, "Error recovering version set with %d records: %s",
         read_records, error.c_str());
   }
-  for (uint32_t i = 0; i < builders.size(); i++) delete builders[i];
+  for (auto &bd : builders) delete bd.second;
 
   return s;
 }
@@ -1253,10 +1261,10 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
         // "ikey" falls in the range for this table.  Add the
         // approximate offset of "ikey" within the table.
         Table* tableptr;
-        ReadOptions read_option;
-        read_option.read_dir = sub_treedir_;
+        // ReadOptions read_option;
+        // read_option.read_dir = sub_treedir_;
         Iterator* iter = table_cache_->NewIterator(
-            read_option, files[i]->number, files[i]->file_size, &tableptr);
+            ReadOptions(), files[i]->pos_, files[i]->number, files[i]->file_size, &tableptr);
         if (tableptr != nullptr) {
           result += tableptr->ApproximateOffsetOf(ikey.Encode());
         }
@@ -1341,7 +1349,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
   ReadOptions options;
   options.verify_checksums = options_->paranoid_checks;
   options.fill_cache = false;
-  options.read_dir = sub_treedir_;
+  // options.read_dir = sub_treedir_;
 
   // Level-0 files have to be merged together.  For other levels,
   // we will make a concatenating iterator per level.
@@ -1354,7 +1362,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
       if (c->level() + which == 0) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
         for (size_t i = 0; i < files.size(); i++) {
-          list[num++] = table_cache_->NewIterator(options, files[i]->number,
+          list[num++] = table_cache_->NewIterator(options, files[i]->pos_, files[i]->number,
                                                   files[i]->file_size);
         }
       } else {

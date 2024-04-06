@@ -59,8 +59,10 @@ class MemTableIterator : public Iterator {
   void Next() override { iter_.Next(); }
   void Prev() override { iter_.Prev(); }
   Slice key() const override { return GetLengthPrefixedSlice(iter_.key()); }
+  ///** return value with key_hash : key_hash + value
   Slice value() const override {
     Slice key_slice = GetLengthPrefixedSlice(iter_.key());
+    ///** change to fit key_hash
     return GetLengthPrefixedSlice(key_slice.data() + key_slice.size());
   }
 
@@ -98,6 +100,37 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   table_.Insert(buf);
 }
 
+///** change format key_size + key + (value_size + key_hash_size) + (key_hash + value)
+void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key, const uint8_t& key_hash,
+                   const Slice& value) {
+  // Format of an entry is concatenation of:
+  //  key_size     : varint32 of internal_key.size()
+  //  key bytes    : char[internal_key.size()]
+  //  value_size   : varint32 of value.size()
+  //  value bytes  : char[value.size()]
+  size_t key_size = key.size();
+  size_t val_size = value.size();
+  size_t internal_key_size = key_size + 8;
+  ///** add key_hash length(default 1)
+  const size_t encoded_len = VarintLength(internal_key_size) +
+                             internal_key_size + VarintLength(val_size + dynamicConfig::key_hash_bytes) +
+                             val_size + 1;
+  char* buf = arena_.Allocate(encoded_len);
+  char* p = EncodeVarint32(buf, internal_key_size);
+  std::memcpy(p, key.data(), key_size);
+  p += key_size;
+  EncodeFixed64(p, (s << 8) | type);
+  p += 8;
+  //*** add key_hash
+  p = EncodeVarint32(p, val_size + dynamicConfig::key_hash_bytes);
+  EncodeFixed8(p, key_hash);
+  p += 1;
+  std::memcpy(p, value.data(), val_size);
+  assert(p + val_size == buf + encoded_len);
+  table_.Insert(buf);
+}
+
+///** change to fit hash inplementation
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
@@ -107,6 +140,7 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
     //    klength  varint32
     //    userkey  char[klength]
     //    tag      uint64
+    ///** key_hash uint8
     //    vlength  varint32
     //    value    char[vlength]
     // Check that it belongs to same user key.  We do not check the
@@ -121,8 +155,9 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
       const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
       switch (static_cast<ValueType>(tag & 0xff)) {
         case kTypeValue: {
-          Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
-          value->assign(v.data(), v.size());
+          Slice v = GetLengthPrefixedSlice(key_ptr + key_length); 
+          ///** key_hash + 1
+          value->assign(v.data() + dynamicConfig::key_hash_bytes, v.size());
           return true;
         }
         case kTypeDeletion:

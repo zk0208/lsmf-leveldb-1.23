@@ -60,9 +60,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
     if (s.ok()) {
       // Verify that the table is usable
-      ReadOptions read_option;
-      read_option.read_dir = dbname;
-      Iterator* it = table_cache->NewIterator(read_option, meta->number,
+      Iterator* it = table_cache->NewIterator(ReadOptions(), meta->pos_, meta->number,
                                               meta->file_size);
       //Iterator* it = table_cache->NewIterator(ReadOptions(), meta->number,
       //                                      meta->file_size);

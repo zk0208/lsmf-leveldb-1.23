@@ -21,6 +21,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 
+#include <cstdint>
+#include <map>
 #include <string>
 #include "db/dbformat.h"
 #include "leveldb/export.h"
@@ -37,6 +39,8 @@ class LEVELDB_EXPORT WriteBatch {
     virtual ~Handler();
     virtual void Put(const Slice& key, const Slice& value) = 0;
     virtual void Delete(const Slice& key) = 0;
+    void Put(const Slice& key, const uint8_t& key_hash, const Slice& value);
+    void Delete(const Slice& key, const uint8_t& key_hash);
   };
 
   WriteBatch();
@@ -48,9 +52,9 @@ class LEVELDB_EXPORT WriteBatch {
   ~WriteBatch();
 
   //batch中应该内容均属于一个Tree，但是没有记录，所以写一个解析batch中key的函数
-  Status GetKey(const int& index, Slice * key, Slice* value, ValueType* type);
+  Status GetKey(const int& index, Slice * key, uint8_t* key_hash, Slice* value, ValueType* type);
   //将原始batch中内容分成多个batch
-  Status GetKey2(WriteBatch* batchs, int* batchs_num);
+  Status GetKey2(std::map<uint8_t, WriteBatch> &batchs);
 
   // Store the mapping "key->value" in the database.
   void Put(const Slice& key, const Slice& value);
@@ -76,6 +80,8 @@ class LEVELDB_EXPORT WriteBatch {
 
   // Support for iterating over the contents of a batch.
   Status Iterate(Handler* handler) const;
+  ///** change to fit hash inplementation
+  Status Iterate(Handler* handler, bool hash) const;
 
  private:
   friend class WriteBatchInternal;

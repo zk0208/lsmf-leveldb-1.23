@@ -37,7 +37,7 @@ class MergingTreeIterator : public Iterator {
         n_(n),
         current_(nullptr),
         direction_(kForward),
-        th_n_(config::kNumSingleTrees),
+        th_n_(dynamicConfig::kNumSingleTrees),
         done_(true),
         work_(0),
         child_idx_(n),

@@ -20,6 +20,8 @@
 namespace leveldb {
 
 // Standard Put... routines append to a string
+///** add key's hash value
+void PutFixed8(std::string* dst, uint8_t value);
 void PutFixed32(std::string* dst, uint32_t value);
 void PutFixed64(std::string* dst, uint64_t value);
 void PutVarint32(std::string* dst, uint32_t value);
@@ -31,6 +33,7 @@ void PutLengthPrefixedSlice(std::string* dst, const Slice& value);
 bool GetVarint32(Slice* input, uint32_t* value);
 bool GetVarint64(Slice* input, uint64_t* value);
 bool GetLengthPrefixedSlice(Slice* input, Slice* result);
+bool GetKeyHashValue(Slice* input, uint8_t* result);
 
 // Pointer-based variants of GetVarint...  These either store a value
 // in *v and return a pointer just past the parsed value, or return
@@ -50,6 +53,14 @@ char* EncodeVarint64(char* dst, uint64_t value);
 
 // Lower-level versions of Put... that write directly into a character buffer
 // REQUIRES: dst has enough space for the value being written
+
+///** add key's hash value
+inline void EncodeFixed8(char* dst, uint8_t value) {
+  uint8_t* const buffer = reinterpret_cast<uint8_t*>(dst);
+
+  // Recent clang and gcc optimize this to a single mov / str instruction.
+  buffer[0] = value;
+}
 
 inline void EncodeFixed32(char* dst, uint32_t value) {
   uint8_t* const buffer = reinterpret_cast<uint8_t*>(dst);
@@ -77,6 +88,13 @@ inline void EncodeFixed64(char* dst, uint64_t value) {
 
 // Lower-level versions of Get... that read directly from a character buffer
 // without any bounds checking.
+
+///** add key's hash value
+inline uint8_t DecodeFixed8(const char* ptr) {
+  const uint8_t* const buffer = reinterpret_cast<const uint8_t*>(ptr);
+
+  return buffer[0];
+}
 
 inline uint32_t DecodeFixed32(const char* ptr) {
   const uint8_t* const buffer = reinterpret_cast<const uint8_t*>(ptr);

@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <set>
 
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
@@ -18,6 +19,37 @@
 #include "util/logging.h"
 
 namespace leveldb {
+
+// Multi-LSM* ： options additional
+namespace dynamicConfig {
+  static uint8_t key_hash_bytes = 1;
+  static std::set<uint8_t> idSet;
+  static uint8_t kNumSingleTrees = 4;
+  static uint8_t kNumTreeBits = 2;
+  static double kExpandFlag = 0.8;
+
+  static uint8_t calculateTreeNum(uint8_t hash){
+    int bits = kNumTreeBits;
+    while(bits >= 2){
+      uint8_t num = hash & ((1 << bits) - 1);
+      if(idSet.find(num) != idSet.end())
+        return num;
+      else
+        --bits; 
+    }
+    return 0;
+  }
+  
+  static bool testPos(Slice value, uint8_t id) {
+    uint32_t len;
+    const char* p = value.data();
+    p = GetVarint32Ptr(p, p + 5, &len);
+    uint8_t hash = DecodeFixed8(p);
+    hash = hash & ((1 << kNumTreeBits) - 1);
+    return hash == id;
+  }
+
+}
 
 // Grouping of constants.  We may want to make some of these
 // parameters set via options.

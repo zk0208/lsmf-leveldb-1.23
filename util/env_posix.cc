@@ -25,6 +25,7 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include "db/dbformat.h"
@@ -750,7 +751,10 @@ class PosixEnv : public Env {
       std::queue<BackgroundWorkItem> background_work_queue_
         GUARDED_BY(background_work_mutex_);
   };
-  std::vector<Thread_args> back_thread_args;
+
+  ///** 根据id确定是那个LSM的后台线程
+  std::unordered_map<uint8_t, Thread_args> back_thread_args;
+  //std::vector<Thread_args> back_thread_args;
 
   // port::Mutex background_work_mutex_;
   // port::CondVar background_work_cv_ GUARDED_BY(background_work_mutex_);
@@ -789,7 +793,7 @@ int MaxOpenFiles() {
 PosixEnv::PosixEnv()
     : // background_work_cv_(&background_work_mutex_),
       // started_background_thread_(false),
-      back_thread_args(leveldb::config::kNumSingleTrees),
+      // back_thread_args(leveldb::dynamicConfig::kNumSingleTrees),
       mmap_limiter_(MaxMmaps()),
       fd_limiter_(MaxOpenFiles()) {}
 

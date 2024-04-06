@@ -33,12 +33,15 @@ class TableCache {
   // underlies the returned iterator.  The returned "*tableptr" object is owned
   // by the cache and should not be deleted, and is valid for as long as the
   // returned iterator is live.
-  Iterator* NewIterator(const ReadOptions& options, uint64_t file_number,
+  Iterator* NewIterator(const ReadOptions& options, uint8_t file_pos, uint64_t file_number,
                         uint64_t file_size, Table** tableptr = nullptr);
 
   // If a seek to internal key "k" in specified file finds an entry,
   // call (*handle_result)(arg, found_key, found_value).
-  Status Get(const ReadOptions& options, uint64_t file_number,
+    Status Get(const ReadOptions& options, uint64_t file_number,
+             uint64_t file_size, const Slice& k, void* arg,
+             void (*handle_result)(void*, const Slice&, const Slice&));
+  Status Get(const ReadOptions& options, uint8_t file_pos, uint64_t file_number,
              uint64_t file_size, const Slice& k, void* arg,
              void (*handle_result)(void*, const Slice&, const Slice&));
 

@@ -33,7 +33,7 @@ class MergingTreeIterator : public Iterator {
         itertime_(iterTime()),
         optype_(opnone),
         tar_(""),
-        th_n_(config::kNumSingleTrees),
+        th_n_(dynamicConfig::kNumSingleTrees),
         done_(true),
         work_((1 << th_n_) - 1),
         child_idx_(n) {

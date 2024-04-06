@@ -3,8 +3,15 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/coding.h"
+#include <cstdint>
 
 namespace leveldb {
+
+void PutFixed8(std::string *dst, uint8_t value) {
+  char buf[sizeof(value)];
+  EncodeFixed8(buf, value);
+  dst->append(buf, sizeof(buf));
+}
 
 void PutFixed32(std::string* dst, uint32_t value) {
   char buf[sizeof(value)];
@@ -157,6 +164,16 @@ bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
   if (GetVarint32(input, &len) && input->size() >= len) {
     *result = Slice(input->data(), len);
     input->remove_prefix(len);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool GetKeyHashValue(Slice* input, uint8_t* result){
+  if(input->size() >= 1){
+    *result = DecodeFixed8(input->data());
+    input->remove_prefix(1);
     return true;
   } else {
     return false;

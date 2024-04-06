@@ -5,6 +5,7 @@
 #ifndef STORAGE_LEVELDB_DB_VERSION_EDIT_H_
 #define STORAGE_LEVELDB_DB_VERSION_EDIT_H_
 
+#include <cstdint>
 #include <set>
 #include <utility>
 #include <vector>
@@ -20,6 +21,8 @@ struct FileMetaData {
 
   int refs;
   int allowed_seeks;  // Seeks allowed until compaction
+  ///** change to infer tree's position;
+  uint8_t pos_;
   uint64_t number;
   uint64_t file_size;    // File size in bytes
   InternalKey smallest;  // Smallest internal key served by table
@@ -71,6 +74,7 @@ class VersionEdit {
   void AddFile(int level, uint64_t file, uint64_t file_size,
                const InternalKey& smallest, const InternalKey& largest) {
     FileMetaData f;
+    f.pos_ = single_tree_id_;
     f.number = file;
     f.file_size = file_size;
     f.smallest = smallest;

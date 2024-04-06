@@ -16,8 +16,11 @@
 #define STORAGE_LEVELDB_DB_VERSION_SET_H_
 
 #include <atomic>
+#include <cstdint>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "db/dbformat.h"
@@ -168,7 +171,7 @@ class Version {
 class VersionSet {
  public:
   VersionSet(const std::string& dbname, const Options* options,
-             TableCache* table_cache, const InternalKeyComparator*, const uint32_t id);
+             TableCache* table_cache, const InternalKeyComparator*, const uint8_t id);
   VersionSet(const VersionSet&) = delete;
   VersionSet& operator=(const VersionSet&) = delete;
 
@@ -184,10 +187,11 @@ class VersionSet {
 
   // Recover the last saved descriptor from persistent storage.
   //Status Recover(bool* save_manifest);
-  static Status Recover(bool* save_manifest, std::vector<VersionSet*>& version_sets);
+  // static Status Recover(bool* save_manifest, std::vector<VersionSet*>& version_sets);
+  static Status Recover(bool* save_manifest, std::unordered_map<uint8_t, VersionSet*> & version_sets);
 
   static Status InitManifest(Env* const env, const std::string dbname,
-                             std::vector<VersionSet*>& version_sets);
+                             std::unordered_map<uint8_t, VersionSet*>& version_sets);
 
   // Return the current version.
   Version* current() const { return current_; }
@@ -275,7 +279,7 @@ class VersionSet {
     char buffer[100];
   };
   const char* LevelSummary(LevelSummaryStorage* scratch) const;
-  uint32_t GetID() { return id_; }
+  uint8_t GetID() { return id_; }
   static void SetMutex(port::Mutex* mu) { mutex_ = mu; }
   // opened lazily
   static WritableFile* descriptor_file_;
@@ -303,7 +307,7 @@ class VersionSet {
   // Save current contents to *log
   Status WriteSnapshot(log::Writer* log);
   static Status WriteSnapshot(log::Writer* log,
-                              std::vector<VersionSet*>& version_sets);
+                              std::unordered_map<uint8_t, VersionSet*>& version_sets);
 
   void AppendVersion(Version* v);
 
@@ -318,7 +322,7 @@ class VersionSet {
   uint64_t log_number_;
   uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
   uint64_t oldest_log_number; //记录当前Tree需要的最远log，用来删除旧log
-  uint32_t id_;
+  uint8_t id_;
   //关于文件的number问题暂时使用的是静态数据成员变量都可以修改解决,且是原子更新
   static std::atomic_uint64_t next_file_number_;
   static uint64_t manifest_file_number_;

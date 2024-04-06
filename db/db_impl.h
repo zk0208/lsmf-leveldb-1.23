@@ -8,13 +8,17 @@
 #include "db/memtable.h"
 #include "db/version_set.h"
 #include <atomic>
+#include <cstdint>
 #include <deque>
+#include <map>
 #include <set>
 #include <string>
+#include <filesystem>
 
 #include "db/dbformat.h"
 #include "db/log_writer.h"
 #include "db/snapshot.h"
+#include <unordered_map>
 #include <vector>
 #include "leveldb/db.h"
 #include "leveldb/env.h"
@@ -24,6 +28,7 @@
 
 namespace leveldb {
 
+//****
 namespace iterstateclean
 {
   struct IterState {
@@ -57,7 +62,7 @@ class VersionSet;
 class SingleTree{
 
  public:
-  SingleTree(DBImpl * db, uint32_t id);
+  SingleTree(DBImpl * db, uint8_t id);
 
   SingleTree(const SingleTree&) = delete;
   SingleTree& operator=(const SingleTree&) = delete;
@@ -66,7 +71,7 @@ class SingleTree{
 
   //单棵树的读写接口，写时先写入db的log，然后再写入mem
   Status Write(const WriteOptions& options, WriteBatch* updates);
-  Status Get(ReadOptions& options, const Slice& key,
+  Status Get(const ReadOptions& options, const Slice& key,
                      std::string* value);
   //virtual Iterator* NewIterator(const ReadOptions&);
 
@@ -181,7 +186,7 @@ class SingleTree{
 
 
   DBImpl * db_;
-  uint32_t id_;
+  uint8_t id_;
 
   const Comparator* user_comparator() const {
     return internal_comparator_.user_comparator();
@@ -197,6 +202,13 @@ class SingleTree{
   bool background_compaction_scheduled_ GUARDED_BY(mutex_);
   port::CondVar background_work_finished_signal_ GUARDED_BY(mutex_);
   MemTable* mem_;
+
+  ///** add for dynamic
+  MemTable* imm_split_;   // Memtable 也需要分裂，只不过可以直接被刷下去，由Compaction过程来执行清洗
+  bool has_imm_split_ = false;    // 是否有imm_split需要被flush，有的话imm不能被刷盘直到imm_split被刷盘
+  bool split_flag_ = false;            // 是否需要分裂
+
+  uint64_t imm_logfile_number_;  // 保证WAL与当前memtable、IMM一致，只有IMM刷盘了，才会改变
   MemTable* imm_ GUARDED_BY(mutex_);  // Memtable being compacted
   std::atomic<bool> has_imm_;         // So bg thread can detect non-null imm_
   // WritableFile* logfile_;
@@ -274,7 +286,9 @@ class DBImpl : public DB {
   // Recover the descriptor from persistent storage.  May do a significant
   // amount of work to recover recently logged updates.  Any changes to
   // be made to the descriptor are added to *edit.
-  Status Recover(VersionEdit* edit, bool* save_manifest)
+  // Status Recover(VersionEdit* &edit, bool* save_manifest)
+  //     EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  Status Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* save_manifest)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void MaybeIgnoreError(Status* s) const;
@@ -283,8 +297,12 @@ class DBImpl : public DB {
   //void RemoveObsoleteFiles() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void RemoveObsoleteFiles();
 
+  // Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
+  //                       VersionEdit* &edit, SequenceNumber* max_sequence)
+  //     EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
-                        VersionEdit* edit, SequenceNumber* max_sequence)
+                  std::unordered_map<uint8_t, VersionEdit> &edit, 
+                  std::unordered_map<uint8_t, SequenceNumber> &max_sequence)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const Comparator* user_comparator() const {
@@ -322,8 +340,12 @@ class DBImpl : public DB {
 
   SnapshotList snapshots_ GUARDED_BY(mutex_);
 
+  ///** add to dynamic
+  bool has_split_ = false;            // 是否有子树正在分裂，有的话就先不分裂，先跳过
+
   //下面就是包含的多个tree
-  std::vector<SingleTree *> singleTrees_;
+  // std::vector<SingleTree *> singleTrees_;
+  std::map<uint8_t, SingleTree *> singleTrees_;
 };
 
 // Sanitize db options.  The caller should delete result.info_log if

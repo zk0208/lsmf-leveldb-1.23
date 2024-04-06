@@ -6,9 +6,10 @@
 //    sequence: fixed64
 //    count: fixed32
 //    data: record[count]
+///** change record
 // record :=
-//    kTypeValue varstring varstring         |
-//    kTypeDeletion varstring
+//    kTypeValue varstring varstring    =>    kTypeValue varstring fixed8(key's hash value) varstring 
+//    kTypeDeletion varstring           =>    kTypeDeletion fixed8(key's hash value) varstring
 // varstring :=
 //    len: varint32
 //    data: uint8[len]
@@ -18,6 +19,7 @@
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
+#include <cstdint>
 #include "leveldb/db.h"
 #include "util/coding.h"
 #include "util/hash.h"
@@ -40,6 +42,7 @@ void WriteBatch::Clear() {
 
 size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
 
+
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
   if (input.size() < kHeader) {
@@ -48,6 +51,7 @@ Status WriteBatch::Iterate(Handler* handler) const {
 
   input.remove_prefix(kHeader);
   Slice key, value;
+  uint8_t key_hash;
   int found = 0;
   while (!input.empty()) {
     found++;
@@ -80,6 +84,48 @@ Status WriteBatch::Iterate(Handler* handler) const {
   }
 }
 
+///** change writebacth iterate to fit our hash inplementation
+Status WriteBatch::Iterate(Handler* handler, bool hash) const {
+  Slice input(rep_);
+  if (input.size() < kHeader) {
+    return Status::Corruption("malformed WriteBatch (too small)");
+  }
+
+  input.remove_prefix(kHeader);
+  Slice key, value;
+  uint8_t key_hash;
+  int found = 0;
+  while (!input.empty()) {
+    found++;
+    char tag = input[0];
+    input.remove_prefix(1);
+    switch (tag) {
+      case kTypeValue:
+        if (GetLengthPrefixedSlice(&input, &key) && GetKeyHashValue(&input, &key_hash) &&
+            GetLengthPrefixedSlice(&input, &value)) {
+          handler->Put(key, key_hash, value);
+        } else {
+          return Status::Corruption("bad WriteBatch Put");
+        }
+        break;
+      case kTypeDeletion:
+        if (GetLengthPrefixedSlice(&input, &key) && GetKeyHashValue(&input, &key_hash)) {
+          handler->Delete(key, key_hash);
+        } else {
+          return Status::Corruption("bad WriteBatch Delete");
+        }
+        break;
+      default:
+        return Status::Corruption("unknown WriteBatch tag");
+    }
+  }
+  if (found != WriteBatchInternal::Count(this)) {
+    return Status::Corruption("WriteBatch has wrong count");
+  } else {
+    return Status::OK();
+  }
+}
+
 int WriteBatchInternal::Count(const WriteBatch* b) {
   return DecodeFixed32(b->rep_.data() + 8);
 }
@@ -96,7 +142,7 @@ void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
   EncodeFixed64(&b->rep_[0], seq);
 }
 
-Status WriteBatch::GetKey(const int& index, Slice* key, Slice* value, ValueType* type){
+Status WriteBatch::GetKey(const int& index, Slice* key, uint8_t* key_hash, Slice* value, ValueType* type){
   Slice input(rep_);
   if (input.size() < kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
@@ -112,7 +158,7 @@ Status WriteBatch::GetKey(const int& index, Slice* key, Slice* value, ValueType*
     input.remove_prefix(1);
     switch (tag) {
       case kTypeValue:
-        if (GetLengthPrefixedSlice(&input, key) &&
+        if (GetLengthPrefixedSlice(&input, key) && GetKeyHashValue(&input, key_hash) &&
             GetLengthPrefixedSlice(&input, value)) {
               *type = kTypeValue;
         } else {
@@ -120,7 +166,7 @@ Status WriteBatch::GetKey(const int& index, Slice* key, Slice* value, ValueType*
         }
         break;
       case kTypeDeletion:
-        if (GetLengthPrefixedSlice(&input, key)) {
+        if (GetLengthPrefixedSlice(&input, key) && GetKeyHashValue(&input, key_hash)) {
           *type = kTypeDeletion;
           value = nullptr;
         } else {
@@ -133,7 +179,7 @@ Status WriteBatch::GetKey(const int& index, Slice* key, Slice* value, ValueType*
   }
   return Status::OK();
 }
-Status WriteBatch::GetKey2(WriteBatch* batchs, int* batchs_num){
+Status WriteBatch::GetKey2(std::map<uint8_t, WriteBatch> &batchs){
   Slice input(rep_);
   if (input.size() < kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
@@ -141,6 +187,7 @@ Status WriteBatch::GetKey2(WriteBatch* batchs, int* batchs_num){
 
   input.remove_prefix(kHeader);
   Slice key, value;
+  uint8_t key_hash;
   int found = 0;
   while (!input.empty()) {
     found++;
@@ -148,20 +195,18 @@ Status WriteBatch::GetKey2(WriteBatch* batchs, int* batchs_num){
     input.remove_prefix(1);
     switch (tag) {
       case kTypeValue:
-        if (GetLengthPrefixedSlice(&input, &key) &&
+        if (GetLengthPrefixedSlice(&input, &key) && GetKeyHashValue(&input, &key_hash) &&
             GetLengthPrefixedSlice(&input, &value)) {
-          uint32_t Tree_id = GetSingleTreeID(key.data(), key.size()) % config::kNumSingleTrees;
+          uint8_t Tree_id = dynamicConfig::calculateTreeNum(key_hash);
           batchs[Tree_id].Put(key, value);
-          batchs_num[Tree_id]++;
         } else {
           return Status::Corruption("bad WriteBatch Put");
         }
         break;
       case kTypeDeletion:
-        if (GetLengthPrefixedSlice(&input, &key)) {
-          uint32_t Tree_id = GetSingleTreeID(key.data(), key.size()) % config::kNumSingleTrees;
+        if (GetLengthPrefixedSlice(&input, &key) && GetKeyHashValue(&input, &key_hash)) {
+          uint8_t Tree_id = dynamicConfig::calculateTreeNum(key_hash);
           batchs[Tree_id].Delete(key);
-          batchs_num[Tree_id]++;
         } else {
           return Status::Corruption("bad WriteBatch Delete");
         }
@@ -181,6 +226,8 @@ void WriteBatch::Put(const Slice& key, const Slice& value) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
   rep_.push_back(static_cast<char>(kTypeValue));
   PutLengthPrefixedSlice(&rep_, key);
+  uint8_t key_hash = GetSingleTreeID(key.data(), key.size()) % 256;
+  PutFixed8(&rep_, key_hash);
   PutLengthPrefixedSlice(&rep_, value);
 }
 
@@ -188,6 +235,8 @@ void WriteBatch::Delete(const Slice& key) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
   rep_.push_back(static_cast<char>(kTypeDeletion));
   PutLengthPrefixedSlice(&rep_, key);
+  uint8_t key_hash = GetSingleTreeID(key.data(), key.size()) % 256;
+  PutFixed8(&rep_, key_hash);
 }
 
 void WriteBatch::Append(const WriteBatch& source) {
@@ -208,6 +257,15 @@ class MemTableInserter : public WriteBatch::Handler {
     mem_->Add(sequence_, kTypeDeletion, key, Slice());
     sequence_++;
   }
+
+  void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) {
+    mem_->Add(sequence_, kTypeValue, key, key_hash, value);
+    sequence_++;
+  }
+  void Delete(const Slice& key, const uint8_t& key_hash) {
+    mem_->Add(sequence_, kTypeDeletion, key, key_hash, Slice());
+    sequence_++;
+  }
 };
 }  // namespace
 
@@ -215,7 +273,7 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;
   inserter.sequence_ = WriteBatchInternal::Sequence(b);
   inserter.mem_ = memtable;
-  return b->Iterate(&inserter);
+  return b->Iterate(&inserter, true);   ///** change to fit our hash inplementation
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
