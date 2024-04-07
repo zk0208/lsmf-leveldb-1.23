@@ -5,6 +5,7 @@
 #include "db/version_set.h"
 
 #include "db/dbformat.h"
+#include "db/version_edit.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -16,6 +17,7 @@
 #include "db/table_cache.h"
 #include <unordered_map>
 #include "leveldb/env.h"
+#include "leveldb/status.h"
 #include "leveldb/table_builder.h"
 #include "table/merger.h"
 #include "table/two_level_iterator.h"
@@ -1014,6 +1016,54 @@ Status VersionSet::InitManifest(Env* const env, const std::string dbname,
   }
   return s;
 }
+
+///** add to dynamic
+void Version::AddSplitFiles(std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_){
+  for (int level = 0; level < config::kNumLevels; level++) {
+    const std::vector<FileMetaData*>& files = files_[level];
+    for (size_t i = 0; i < files.size(); i++) {
+      file_split_[files[i]->pos_][files[i]->number]++;
+    }
+  }
+}
+
+Status VersionSet::CopyVersionSet(VersionSet* vset, port::Mutex* mu){
+  last_sequence_ = vset->last_sequence_;
+  log_number_ = vset->log_number_;
+  prev_log_number_ = vset->prev_log_number_;
+  oldest_log_number = vset->oldest_log_number;
+
+  Status s;
+  VersionEdit edit;
+  edit.SetLogNumber(vset->LogNumber());
+  edit.SetPrevLogNumber(vset->PrevLogNumber());
+  edit.SetOldestLogNumber(vset->OldestLogNumber());
+  edit.SetComparatorName(vset->icmp_.user_comparator()->Name());
+
+  // Save compaction pointers
+  for (int level = 0; level < config::kNumLevels; level++) {
+    if (!vset->compact_pointer_[level].empty()) {
+      InternalKey key;
+      key.DecodeFrom(vset->compact_pointer_[level]);
+      edit.SetCompactPointer(level, key);
+    }
+  }
+
+  // Save FileMetaData
+  for (int level = 0; level < config::kNumLevels; level++) {
+    const std::vector<FileMetaData*>& files = vset->current_->files_[level];
+    for (size_t i = 0; i < files.size(); i++) {
+      const FileMetaData* f = files[i];
+      edit.AddFileForSplit(level, f->pos_, f->number, f->file_size, f->smallest, f->largest);
+    }
+  }
+
+
+
+  s = LogAndApply(&edit, mu);
+  return s;
+}
+
 //恢复各个tree的版本信息
 Status VersionSet:: Recover(bool* save_manifest, std::unordered_map<uint8_t, VersionSet*>& version_sets) {
   struct LogReporter : public log::Reader::Reporter {
@@ -1282,6 +1332,20 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
       const std::vector<FileMetaData*>& files = v->files_[level];
       for (size_t i = 0; i < files.size(); i++) {
         live->insert(files[i]->number);
+      }
+    }
+  }
+}
+/// change for split
+void VersionSet::AddLiveFiles(std::set<uint64_t>* live, std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_) {
+  for (Version* v = dummy_versions_.next_; v != &dummy_versions_;
+       v = v->next_) {
+    for (int level = 0; level < config::kNumLevels; level++) {
+      const std::vector<FileMetaData*>& files = v->files_[level];
+      for (size_t i = 0; i < files.size(); i++) {
+        live->insert(files[i]->number);
+        if(files[i]->pos_ != id_)
+          file_split_[files[i]->pos_][files[i]->number]++;
       }
     }
   }
@@ -1641,6 +1705,17 @@ void Compaction::AddInputDeletions(VersionEdit* edit) {
   for (int which = 0; which < 2; which++) {
     for (size_t i = 0; i < inputs_[which].size(); i++) {
       edit->RemoveFile(level_ + which, inputs_[which][i]->number);
+    }
+  }
+}
+/// add for split
+void Compaction::SetGCSplitFiles(std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_, uint8_t id){
+  for (int which = 0; which < 2; which++) {
+    for (size_t i = 0; i < inputs_[which].size(); i++) {
+      if(inputs_[which][i]->pos_ != id)
+        file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number]--;
+      if(file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number] <= 0)
+        file_split_[inputs_[which][i]->pos_].erase(inputs_[which][i]->number);
     }
   }
 }

@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <iostream>
 #include <map>
+#include <math.h>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -109,7 +110,7 @@ SingleTree::SingleTree(DBImpl* db, uint8_t id)
       background_compaction_scheduled_(false),
       background_work_finished_signal_(&mutex_),
       mem_(nullptr),
-      imm_split_(nullptr),
+      // imm_split_(nullptr),
       imm_logfile_number_(0),
       imm_(nullptr),
       has_imm_(false),
@@ -229,11 +230,18 @@ Status SingleTree::Write(const WriteOptions& options, WriteBatch* updates) {
     return w.status;
   }
   ///** add for dynamic split
-  if(split_flag_ && imm_ == nullptr){
-    /// split 
-    split_flag_ = false;
-    // Split();
+  if(!db_->has_split_ && split_flag_ && imm_ == nullptr){
+    /// split : Attempt to switch to a new mem and convert old mem to imm_split 
+    db_->has_split_ = true;
+    Status s = ScheduleSplit();
+    if(!s.ok()){
+      return s;
+    }
 
+    split_flag_ = false;
+    db_->has_split_ = false;
+    MaybeScheduleCompaction();
+    
   }
 
   WriteTimeStats wtstats;
@@ -305,6 +313,68 @@ Status SingleTree::Write(const WriteOptions& options, WriteBatch* updates) {
   WTStats_.Add(wtstats);
 
   return status;
+}
+
+/// add for split
+Status SingleTree::ScheduleSplit() {
+  // 主动切换mem，则 WAL 也需要切换
+  mutex_.AssertHeld();
+  assert(versions_->PrevLogNumber() == 0); 
+  uint64_t new_log_number = versions_->NewFileNumber();
+  WritableFile* lfile = nullptr;
+  Status s;
+  s = db_->env_->NewWritableFile(LogFileName(db_->log_dir, new_log_number), &lfile);
+  if (!s.ok()) {
+    // Avoid chewing through file number space in a tight loop.
+    versions_->ReuseFileNumber(new_log_number);
+    return s;
+  }
+  db_->mutex_.Lock();  // log为多个Tree共用，可能是需要上锁的
+  delete db_->log_;
+  delete db_->logfile_;
+  db_->logfile_ = lfile;
+  db_->logfile_number_ = new_log_number;
+  db_->log_ = new log::Writer(lfile);
+  db_->mutex_.Unlock();
+  // imm_split_ = mem_;
+  has_imm_split_ = true;
+  imm_ = mem_;
+  has_imm_.store(true, std::memory_order_release);
+  imm_logfile_number_ = new_log_number;
+  mem_ = new MemTable(internal_comparator_);
+  mem_->Ref();
+  /// set version file_split
+  versions_->current()->AddSplitFiles(db_->file_split_);
+  
+
+  /// add subtree
+  auto new_tree_id = id_ | (1 << dynamicConfig::idSet[id_]);
+  dynamicConfig::idSet[id_]++;
+  dynamicConfig::idSet[new_tree_id] = dynamicConfig::idSet[id_];
+  if(dynamicConfig::idSet[id_] > dynamicConfig::kNumTreeBits)
+    dynamicConfig::kNumTreeBits = dynamicConfig::idSet[id_];
+  dynamicConfig::kNumSingleTrees++;
+  db_->singleTrees_[new_tree_id] = new SingleTree(db_, new_tree_id);
+  
+  /// set the new tree's components and parameters
+  auto new_tree_ = db_->singleTrees_[new_tree_id];
+  new_tree_->mutex_.Lock();
+  // new_tree_->imm_split_ = imm_split_;
+  new_tree_->has_imm_split_ = has_imm_split_;
+  new_tree_->imm_ = imm_;
+  imm_->Ref();
+  new_tree_->has_imm_.store(true, std::memory_order_release);
+  new_tree_->imm_logfile_number_ = imm_logfile_number_;
+  new_tree_->mem_ = new MemTable(new_tree_->internal_comparator_);
+  new_tree_->mem_->Ref();
+
+  /// copy versionset
+  s = new_tree_->versions_->CopyVersionSet(versions_, &(new_tree_->mutex_));
+  new_tree_->mutex_.Unlock();
+
+  /// change the tree_size indicators et.al.
+
+  return s;
 }
 
 // REQUIRES: Writer list must be non-empty
@@ -559,6 +629,8 @@ void SingleTree::CompactMemTable() {
     // Commit to the new state
     imm_->Unref(); 
     imm_ = nullptr;
+    if(has_imm_split_)
+      has_imm_split_ = false;
     has_imm_.store(false, std::memory_order_release);
     RemoveObsoleteFiles();
     db_->RemoveObsoleteFiles();
@@ -607,6 +679,9 @@ void SingleTree::RemoveObsoleteFiles() {
   std::set<uint64_t> live = pending_outputs_;
   //live.insert(pending_outputs_.begin(), pending_outputs_.end());
   versions_->AddLiveFiles(&live);
+  for (auto & split_file : db_->file_split_[id_]) {
+    live.insert(split_file.first);
+  }
 
   std::vector<std::string> filenames;
   std::string sub_filedir = db_->dbname_ + "/vol" + std::to_string(id_);
@@ -1052,6 +1127,8 @@ Status SingleTree::DoCompactionWork(CompactionState* compact) {
 
   if (status.ok()) {
     status = InstallCompactionResults(compact);
+    /// add to unref split files
+    compact->compaction->SetGCSplitFiles(db_->file_split_, id_);
   }
   if (!status.ok()) {
     RecordBackgroundError(status);
@@ -1494,8 +1571,9 @@ void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
 
 ///** 解析当前数据库中的文件
 namespace fs = std::filesystem;
-void subdir(std::set<uint8_t>& subDirs_, std::string dirPath){
-  
+uint8_t subdir(std::map<uint8_t, uint8_t>& idset, std::string dirPath){
+  uint8_t max_num = 2;
+  std::set<uint8_t> subDirs_;
   // 遍历目录中的子目录
   for (const auto& entry : fs::directory_iterator(dirPath)) {
 
@@ -1507,6 +1585,20 @@ void subdir(std::set<uint8_t>& subDirs_, std::string dirPath){
         }
       }
   }
+
+  for(auto& id : subDirs_){
+    if(id < 4){
+      idset[id] = 2;
+    } else {
+      // uint8_t l_shift = 31 - __builtin_clz(id);
+      uint8_t l_shift = log2(id) + 1;
+      idset[id] = l_shift;
+      uint8_t id_parent = id & (~(1 << (l_shift - 1)));
+      idset[id_parent] = l_shift;
+      max_num = max_num < l_shift ? l_shift : max_num;
+    }
+  }
+  return max_num;
 }
 
 ///** 对指定的log恢复数据到mem，没有写盘时，log可以复用
@@ -1518,7 +1610,6 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
   // may already exist from a previous failed creation attempt.
   env_->CreateDir(dbname_);
 
-  subdir(dynamicConfig::idSet, dbname_);
   for (uint8_t i = 0; i < dynamicConfig::kNumSingleTrees; i++) {
     env_->CreateDir(dbname_ + "/vol" + std::to_string(i));
   }
@@ -1541,7 +1632,7 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
       s = NewDB();
       dynamicConfig::idSet.clear();
       for (uint8_t i = 0; i < dynamicConfig::kNumSingleTrees; i++) {
-        dynamicConfig::idSet.insert(i);
+        dynamicConfig::idSet[i] = 2;
       }
       if (!s.ok()) {
         return s;
@@ -1552,8 +1643,8 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     }
   } else {
     ///** 给出恢复数据后LSMT的数目和表示的最小位数
+    dynamicConfig::kNumTreeBits = subdir(dynamicConfig::idSet, dbname_);
     dynamicConfig::kNumSingleTrees = dynamicConfig::idSet.size();
-    dynamicConfig::kNumTreeBits = static_cast<uint8_t>(std::log2(*dynamicConfig::idSet.rbegin()) + 1);
     if (options_.error_if_exists) {
       return Status::InvalidArgument(dbname_,
                                      "exists (error_if_exists is true)");
@@ -1567,7 +1658,8 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
   //   version_sets.push_back(singleTrees_[i]->versions_);
   // }
   std::unordered_map<uint8_t, VersionSet*> version_sets;
-  for (auto treeID : dynamicConfig::idSet){
+  for (auto &ID : dynamicConfig::idSet){
+    auto treeID = ID.first;
     singleTrees_[treeID] = new SingleTree(this, treeID);
     version_sets[treeID] = singleTrees_[treeID]->versions_;
     edit[treeID] = VersionEdit();
@@ -1594,13 +1686,14 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
   uint64_t min_log = singleTrees_[0]->versions_->LogNumber();
   std::vector<uint64_t> prev_logs;
   std::set<uint64_t> expected;  // 由version记录的应该存在的文件
-  for (auto treeID : dynamicConfig::idSet) {
+  for (auto &ID : dynamicConfig::idSet) {
+    auto treeID = ID.first;
     prev_logs.push_back(singleTrees_[treeID]->versions_->PrevLogNumber());
     if (min_log > singleTrees_[treeID]->versions_->LogNumber())
       min_log = singleTrees_[treeID]->versions_->LogNumber();
     if (min_log > singleTrees_[treeID]->versions_->OldestLogNumber())
       min_log = singleTrees_[treeID]->versions_->OldestLogNumber();
-    singleTrees_[treeID]->versions_->AddLiveFiles(&expected);
+    singleTrees_[treeID]->versions_->AddLiveFiles(&expected, file_split_);
   }
 
   std::vector<std::string> filenames;
@@ -1609,7 +1702,8 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     return s;
   }
   std::vector<std::string> tmpFilenames;
-  for (auto treeID : dynamicConfig::idSet) {
+  for (auto &ID : dynamicConfig::idSet) {
+    auto treeID = ID.first;
     s = env_->GetChildren(dbname_ + "/vol" + std::to_string(treeID),
                           &tmpFilenames);
     if (!s.ok()) {
@@ -1660,7 +1754,8 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     singleTrees_[0]->versions_->MarkFileNumberUsed(logs[i]);
   }
 
-   for (auto treeID : dynamicConfig::idSet) {
+   for (auto &ID : dynamicConfig::idSet) {
+    auto treeID = ID.first;
     if (singleTrees_[treeID]->versions_->LastSequence() < max_sequence[treeID]) {
       singleTrees_[treeID]->versions_->SetLastSequence(max_sequence[treeID]);
     }
@@ -1771,15 +1866,19 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   if (status.ok() && options_.reuse_logs && last_log && compactions == 0) {
     assert(logfile_ == nullptr);
     assert(log_ == nullptr);
-    for (auto treeID : dynamicConfig::idSet)
+    for (auto &ID : dynamicConfig::idSet){
+      auto treeID = ID.first;
       assert(singleTrees_[treeID]->mem_ == nullptr);
+    }
+      
     uint64_t lfile_size;
     if (env_->GetFileSize(fname, &lfile_size).ok() &&
         env_->NewAppendableFile(fname, &logfile_).ok()) {
       Log(options_.info_log, "Reusing old log %s \n", fname.c_str());
       log_ = new log::Writer(logfile_, lfile_size);
       logfile_number_ = log_number;
-      for (auto treeID : dynamicConfig::idSet) {
+      for (auto &ID : dynamicConfig::idSet) {
+        auto treeID = ID.first;
         if (mem[treeID] != nullptr) {
           singleTrees_[treeID]->mem_ = mem[treeID];
           mem[treeID] = nullptr;
@@ -1792,7 +1891,8 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     }
   }
 
-  for (auto treeID : dynamicConfig::idSet) {
+  for (auto &ID : dynamicConfig::idSet) {
+    auto treeID = ID.first;
     if (mem[treeID] != nullptr) {
       // all mem did not get reused; compact it.
       if (status.ok()) {
@@ -1905,7 +2005,8 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   // 恢复重成功，根据是否复用，创建新的log与mem
   if (s.ok()) {
     bool flag = false;
-    for (auto treeID : dynamicConfig::idSet) {
+    for (auto &ID : dynamicConfig::idSet) {
+      auto treeID = ID.first;
       if (impl->singleTrees_[treeID]->mem_ != nullptr) {
         flag = true;
         break;
@@ -1922,7 +2023,8 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
         impl->logfile_number_ = new_log_number;
         impl->log_ = new log::Writer(lfile);
       }
-      for (auto treeID : dynamicConfig::idSet) {
+      for (auto &ID : dynamicConfig::idSet) {
+        auto treeID = ID.first;
         edit[treeID].SetLogNumber(new_log_number);
         impl->singleTrees_[treeID]->imm_logfile_number_ = new_log_number;
         impl->singleTrees_[treeID]->mem_ = new MemTable(impl->internal_comparator_);
@@ -1933,11 +2035,13 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   // 重新建立manifest文件
   if (s.ok() && save_manifest) {
     std::unordered_map<uint8_t, VersionSet*> version_sets;
-    for (auto treeID : dynamicConfig::idSet) {
+    for (auto &ID : dynamicConfig::idSet) {
+      auto treeID = ID.first;
       version_sets[treeID] = impl->singleTrees_[treeID]->versions_;
     }
     s = VersionSet::InitManifest(options.env, dbname, version_sets);
-    for (auto treeID : dynamicConfig::idSet) {
+    for (auto &ID : dynamicConfig::idSet) {
+      auto treeID = ID.first;
       edit[treeID].SetPrevLogNumber(0);
       edit[treeID].SetLogNumber(impl->logfile_number_);
       edit[treeID].SetOldestLogNumber(impl->logfile_number_);
@@ -1947,7 +2051,8 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   impl->mutex_.Unlock();
   if (s.ok()) {
     impl->RemoveObsoleteFiles();
-    for (auto treeID : dynamicConfig::idSet) {
+    for (auto &ID : dynamicConfig::idSet) {
+      auto treeID = ID.first;
       impl->singleTrees_[treeID]->mutex_.Lock();
       impl->singleTrees_[treeID]->MaybeScheduleCompaction();
       impl->singleTrees_[treeID]->mutex_.Unlock();

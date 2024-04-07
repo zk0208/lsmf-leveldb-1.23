@@ -23,6 +23,7 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "leveldb/status.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
@@ -184,6 +185,8 @@ class SingleTree{
   Status InstallCompactionResults(CompactionState* compact)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  ///** add for dynamic split
+  Status ScheduleSplit() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   DBImpl * db_;
   uint8_t id_;
@@ -204,7 +207,7 @@ class SingleTree{
   MemTable* mem_;
 
   ///** add for dynamic
-  MemTable* imm_split_;   // Memtable 也需要分裂，只不过可以直接被刷下去，由Compaction过程来执行清洗
+  // MemTable* imm_split_;   // Memtable 也需要分裂，只不过可以直接被刷下去，由Compaction过程来执行清洗
   bool has_imm_split_ = false;    // 是否有imm_split需要被flush，有的话imm不能被刷盘直到imm_split被刷盘
   bool split_flag_ = false;            // 是否需要分裂
 
@@ -341,7 +344,8 @@ class DBImpl : public DB {
   SnapshotList snapshots_ GUARDED_BY(mutex_);
 
   ///** add to dynamic
-  bool has_split_ = false;            // 是否有子树正在分裂，有的话就先不分裂，先跳过
+  std::atomic<bool> has_split_ = false;            // 是否有子树正在分裂，有的话就先不分裂，先跳过
+  std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> file_split_;
 
   //下面就是包含的多个tree
   // std::vector<SingleTree *> singleTrees_;

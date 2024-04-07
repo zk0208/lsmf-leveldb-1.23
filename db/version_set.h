@@ -25,6 +25,7 @@
 
 #include "db/dbformat.h"
 #include "db/version_edit.h"
+#include "leveldb/status.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
@@ -117,6 +118,9 @@ class Version {
 
   // Return a human readable string that describes this version's contents.
   std::string DebugString() const;
+
+  /// add for split
+  void AddSplitFiles(std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_);
 
  private:
   friend class Compaction;
@@ -269,6 +273,9 @@ class VersionSet {
   // May also mutate some internal state.
   void AddLiveFiles(std::set<uint64_t>* live);
 
+  ///** change for split
+  void AddLiveFiles(std::set<uint64_t>* live, std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_);
+
   // Return the approximate offset in the database of the data for
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);
@@ -284,6 +291,9 @@ class VersionSet {
   // opened lazily
   static WritableFile* descriptor_file_;
   static log::Writer* descriptor_log_;
+
+  /// add to dynamic tree
+  Status CopyVersionSet(VersionSet* vset, port::Mutex* mu);
 
  private:
   class Builder;
@@ -366,6 +376,9 @@ class Compaction {
 
   // Add all inputs to this compaction as delete operations to *edit.
   void AddInputDeletions(VersionEdit* edit);
+
+  /// add for split files delete
+  void SetGCSplitFiles(std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_, uint8_t id);
 
   // Returns true if the information we have available guarantees that
   // the compaction is producing data in "level+1" for which no data exists

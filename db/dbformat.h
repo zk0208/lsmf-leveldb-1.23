@@ -9,11 +9,13 @@
 #include <cstdint>
 #include <string>
 #include <set>
+#include <map>
 
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/slice.h"
+#include "leveldb/status.h"
 #include "leveldb/table_builder.h"
 #include "util/coding.h"
 #include "util/logging.h"
@@ -23,7 +25,8 @@ namespace leveldb {
 // Multi-LSM* ： options additional
 namespace dynamicConfig {
   static uint8_t key_hash_bytes = 1;
-  static std::set<uint8_t> idSet;
+  // static std::set<uint8_t> idSet;
+  static std::map<uint8_t, uint8_t>idSet;   //代表子树编号，当前编号的位数
   static uint8_t kNumSingleTrees = 4;
   static uint8_t kNumTreeBits = 2;
   static double kExpandFlag = 0.8;
@@ -40,6 +43,7 @@ namespace dynamicConfig {
     return 0;
   }
   
+  /// error maybe need to change
   static bool testPos(Slice value, uint8_t id) {
     uint32_t len;
     const char* p = value.data();

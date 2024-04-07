@@ -81,6 +81,17 @@ class VersionEdit {
     f.largest = largest;
     new_files_.push_back(std::make_pair(level, f));
   }
+  ///** change to split
+  void AddFileForSplit(int level, uint8_t pos, uint64_t file, uint64_t file_size,
+               const InternalKey& smallest, const InternalKey& largest) {
+    FileMetaData f;
+    f.pos_ = pos;
+    f.number = file;
+    f.file_size = file_size;
+    f.smallest = smallest;
+    f.largest = largest;
+    new_files_.push_back(std::make_pair(level, f));
+  }
 
   // Delete the specified "file" from the specified "level".
   void RemoveFile(int level, uint64_t file) {
