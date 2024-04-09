@@ -210,6 +210,8 @@ class SingleTree{
   // MemTable* imm_split_;   // Memtable 也需要分裂，只不过可以直接被刷下去，由Compaction过程来执行清洗
   bool has_imm_split_ = false;    // 是否有imm_split需要被flush，有的话imm不能被刷盘直到imm_split被刷盘
   bool split_flag_ = false;            // 是否需要分裂
+  uint64_t tree_size_ = 0;    //子树的大小，虚拟参考值，用来判断是否需要分裂
+  uint64_t split_size_max = 0;  //分裂的容量阈值
 
   uint64_t imm_logfile_number_;  // 保证WAL与当前memtable、IMM一致，只有IMM刷盘了，才会改变
   MemTable* imm_ GUARDED_BY(mutex_);  // Memtable being compacted

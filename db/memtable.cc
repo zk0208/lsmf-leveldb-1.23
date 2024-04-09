@@ -7,6 +7,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "leveldb/slice.h"
 #include "util/coding.h"
 
 namespace leveldb {
@@ -63,7 +64,10 @@ class MemTableIterator : public Iterator {
   Slice value() const override {
     Slice key_slice = GetLengthPrefixedSlice(iter_.key());
     ///** change to fit key_hash
+    // Slice value_hash = GetLengthPrefixedSlice(key_slice.data() + key_slice.size());
+    // return Slice(value_hash.data() + 1, value_hash.size() - 1);
     return GetLengthPrefixedSlice(key_slice.data() + key_slice.size());
+    
   }
 
   Status status() const override { return Status::OK(); }

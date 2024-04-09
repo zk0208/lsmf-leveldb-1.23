@@ -276,6 +276,8 @@ class VersionSet {
   ///** change for split
   void AddLiveFiles(std::set<uint64_t>* live, std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_);
 
+  void SetTreeSize(uint64_t &size);
+
   // Return the approximate offset in the database of the data for
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);
@@ -287,6 +289,9 @@ class VersionSet {
   };
   const char* LevelSummary(LevelSummaryStorage* scratch) const;
   uint8_t GetID() { return id_; }
+  // bool GetSplitFlag() { return split_flag_; }
+  // void SetSplitFlag(bool flag) { split_flag_ = flag; }
+  uint64_t GetSplitSizeMax() { return split_size_max_; }
   static void SetMutex(port::Mutex* mu) { mutex_ = mu; }
   // opened lazily
   static WritableFile* descriptor_file_;
@@ -328,10 +333,14 @@ class VersionSet {
   TableCache* const table_cache_;
   const InternalKeyComparator icmp_;
 
+  // /// add for judge split size
+  // bool split_flag_ = false;            // 是否需要分裂
+
   uint64_t last_sequence_;
   uint64_t log_number_;
   uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
   uint64_t oldest_log_number; //记录当前Tree需要的最远log，用来删除旧log
+  uint64_t split_size_max_;    //记录当前Tree分裂需要达到的最大size
   uint8_t id_;
   //关于文件的number问题暂时使用的是静态数据成员变量都可以修改解决,且是原子更新
   static std::atomic_uint64_t next_file_number_;

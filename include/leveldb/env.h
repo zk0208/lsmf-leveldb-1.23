@@ -118,6 +118,11 @@ class LEVELDB_EXPORT Env {
   // Original contents of *results are dropped.
   virtual Status GetChildren(const std::string& dir,
                              std::vector<std::string>* result) = 0;
+
+  ///** add for split
+  virtual Status GetChildrenDir(const std::string& dir,
+                             std::vector<std::string>* result) = 0;
+
   // Delete the named file.
   //
   // The default implementation calls DeleteFile, to support legacy Env

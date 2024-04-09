@@ -21,6 +21,7 @@
 #include "db/write_batch_internal.h"
 #include <cstdint>
 #include "leveldb/db.h"
+#include "leveldb/slice.h"
 #include "util/coding.h"
 #include "util/hash.h"
 
@@ -42,6 +43,31 @@ void WriteBatch::Clear() {
 
 size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
 
+// namespace {
+// class MemTableInserter : public WriteBatch::Handler {
+//  public:
+//   SequenceNumber sequence_;
+//   MemTable* mem_;
+
+//   void Put(const Slice& key, const Slice& value) override {
+//     mem_->Add(sequence_, kTypeValue, key, value);
+//     sequence_++;
+//   }
+//   void Delete(const Slice& key) override {
+//     mem_->Add(sequence_, kTypeDeletion, key, Slice());
+//     sequence_++;
+//   }
+
+//   void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) {
+//     mem_->Add(sequence_, kTypeValue, key, key_hash, value);
+//     sequence_++;
+//   }
+//   void Delete(const Slice& key, const uint8_t& key_hash) {
+//     mem_->Add(sequence_, kTypeDeletion, key, key_hash, Slice());
+//     sequence_++;
+//   }
+// };
+// }  // namespace
 
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
@@ -61,14 +87,14 @@ Status WriteBatch::Iterate(Handler* handler) const {
       case kTypeValue:
         if (GetLengthPrefixedSlice(&input, &key) &&
             GetLengthPrefixedSlice(&input, &value)) {
-          handler->Put(key, value);
+          handler->Put(key, 0, value);
         } else {
           return Status::Corruption("bad WriteBatch Put");
         }
         break;
       case kTypeDeletion:
         if (GetLengthPrefixedSlice(&input, &key)) {
-          handler->Delete(key);
+          handler->Delete(key, 0);
         } else {
           return Status::Corruption("bad WriteBatch Delete");
         }
@@ -244,29 +270,29 @@ void WriteBatch::Append(const WriteBatch& source) {
 }
 
 namespace {
-class MemTableInserter : public WriteBatch::Handler {
- public:
-  SequenceNumber sequence_;
-  MemTable* mem_;
+  class MemTableInserter : public WriteBatch::Handler {
+  public:
+    SequenceNumber sequence_;
+    MemTable* mem_;
 
-  void Put(const Slice& key, const Slice& value) override {
-    mem_->Add(sequence_, kTypeValue, key, value);
-    sequence_++;
-  }
-  void Delete(const Slice& key) override {
-    mem_->Add(sequence_, kTypeDeletion, key, Slice());
-    sequence_++;
-  }
+    // void Put(const Slice& key, const Slice& value) override {
+    //   mem_->Add(sequence_, kTypeValue, key, value);
+    //   sequence_++;
+    // }
+    // void Delete(const Slice& key) override {
+    //   mem_->Add(sequence_, kTypeDeletion, key, Slice());
+    //   sequence_++;
+    // }
 
-  void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) {
-    mem_->Add(sequence_, kTypeValue, key, key_hash, value);
-    sequence_++;
-  }
-  void Delete(const Slice& key, const uint8_t& key_hash) {
-    mem_->Add(sequence_, kTypeDeletion, key, key_hash, Slice());
-    sequence_++;
-  }
-};
+    void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) override {
+      mem_->Add(sequence_, kTypeValue, key, key_hash, value);
+      sequence_++;
+    }
+    void Delete(const Slice& key, const uint8_t& key_hash) override {
+      mem_->Add(sequence_, kTypeDeletion, key, key_hash, Slice());
+      sequence_++;
+    }
+  };
 }  // namespace
 
 Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {

@@ -32,15 +32,16 @@ namespace leveldb {
 
 class Slice;
 
+
 class LEVELDB_EXPORT WriteBatch {
  public:
   class LEVELDB_EXPORT Handler {
    public:
     virtual ~Handler();
-    virtual void Put(const Slice& key, const Slice& value) = 0;
-    virtual void Delete(const Slice& key) = 0;
-    void Put(const Slice& key, const uint8_t& key_hash, const Slice& value);
-    void Delete(const Slice& key, const uint8_t& key_hash);
+    // virtual void Put(const Slice& key, const Slice& value) = 0;
+    // virtual void Delete(const Slice& key) = 0;
+    virtual void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) = 0;
+    virtual void Delete(const Slice& key, const uint8_t& key_hash) = 0;
   };
 
   WriteBatch();

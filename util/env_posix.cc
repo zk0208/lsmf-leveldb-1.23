@@ -588,6 +588,25 @@ class PosixEnv : public Env {
     ::closedir(dir);
     return Status::OK();
   }
+  ///** add for split
+  Status GetChildrenDir(const std::string& directory_path,
+                             std::vector<std::string>* result) override {
+    result->clear();
+    ::DIR* dir = ::opendir(directory_path.c_str());
+    if (dir == nullptr) {
+      return PosixError(directory_path, errno);
+    }
+    struct ::dirent* entry;
+    while ((entry = ::readdir(dir)) != nullptr) {
+      if(entry->d_type & DT_DIR) {
+        if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+          continue;
+        result->emplace_back(entry->d_name);
+      }
+    }
+    ::closedir(dir);
+    return Status::OK();                          
+  }
 
   Status RemoveFile(const std::string& filename) override {
     if (::unlink(filename.c_str()) != 0) {

@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <vector>
 #include <filesystem>
+#include <stdexcept>
 
 #include "db/builder.h"
 #include "db/db_iter.h"
@@ -43,6 +44,7 @@
 #include "table/merger.h"
 #include "table/merger_tree.h"
 #include "table/two_level_iterator.h"
+#include "third_party/googletest/googlemock/include/gmock/gmock-matchers.h"
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/hash.h"
@@ -114,6 +116,8 @@ SingleTree::SingleTree(DBImpl* db, uint8_t id)
       imm_logfile_number_(0),
       imm_(nullptr),
       has_imm_(false),
+      split_flag_(false),
+      split_size_max(dynamicConfig::kSplitSize),
       seed_(0),
       tmp_batch_(new WriteBatch),
       manual_compaction_(nullptr),
@@ -124,6 +128,8 @@ SingleTree::~SingleTree() {
   // Wait for background work to finish.
   mutex_.Lock();
   while (background_compaction_scheduled_) {
+    if(has_imm_split_)
+      CompactMemTable();
     background_work_finished_signal_.Wait();
   }
   mutex_.Unlock();
@@ -233,6 +239,7 @@ Status SingleTree::Write(const WriteOptions& options, WriteBatch* updates) {
   if(!db_->has_split_ && split_flag_ && imm_ == nullptr){
     /// split : Attempt to switch to a new mem and convert old mem to imm_split 
     db_->has_split_ = true;
+
     Status s = ScheduleSplit();
     if(!s.ok()){
       return s;
@@ -240,8 +247,7 @@ Status SingleTree::Write(const WriteOptions& options, WriteBatch* updates) {
 
     split_flag_ = false;
     db_->has_split_ = false;
-    MaybeScheduleCompaction();
-    
+    // MaybeScheduleCompaction(); 
   }
 
   WriteTimeStats wtstats;
@@ -329,12 +335,20 @@ Status SingleTree::ScheduleSplit() {
     versions_->ReuseFileNumber(new_log_number);
     return s;
   }
+  VersionEdit edit;
+  edit.SetPrevLogNumber(0);
+  edit.SetOldestLogNumber(imm_logfile_number_);
+  split_size_max = tree_size_ + dynamicConfig::kSplitSize / 2;
   db_->mutex_.Lock();  // log为多个Tree共用，可能是需要上锁的
+
   delete db_->log_;
   delete db_->logfile_;
   db_->logfile_ = lfile;
   db_->logfile_number_ = new_log_number;
   db_->log_ = new log::Writer(lfile);
+
+  edit.SetLogNumber(db_->logfile_number_);  // Earlier logs no longer needed
+  edit.SetSplitSizeMax(split_size_max);
   db_->mutex_.Unlock();
   // imm_split_ = mem_;
   has_imm_split_ = true;
@@ -343,12 +357,16 @@ Status SingleTree::ScheduleSplit() {
   imm_logfile_number_ = new_log_number;
   mem_ = new MemTable(internal_comparator_);
   mem_->Ref();
+
+  s = versions_->LogAndApply(&edit, &mutex_);
+
   /// set version file_split
   versions_->current()->AddSplitFiles(db_->file_split_);
   
 
   /// add subtree
   auto new_tree_id = id_ | (1 << dynamicConfig::idSet[id_]);
+  db_->env_->CreateDir(db_->dbname_ + "/vol" + std::to_string(new_tree_id));
   dynamicConfig::idSet[id_]++;
   dynamicConfig::idSet[new_tree_id] = dynamicConfig::idSet[id_];
   if(dynamicConfig::idSet[id_] > dynamicConfig::kNumTreeBits)
@@ -367,9 +385,15 @@ Status SingleTree::ScheduleSplit() {
   new_tree_->imm_logfile_number_ = imm_logfile_number_;
   new_tree_->mem_ = new MemTable(new_tree_->internal_comparator_);
   new_tree_->mem_->Ref();
+  new_tree_->tree_size_ = tree_size_;
+  new_tree_->split_size_max = split_size_max;
+
+  Log(db_->options_.info_log, "SingleTree %u, spliting %lu@%lu => %lu@%lu %u tree",id_,
+      tree_size_, split_size_max, new_tree_->tree_size_, new_tree_->split_size_max, new_tree_->id_);
 
   /// copy versionset
   s = new_tree_->versions_->CopyVersionSet(versions_, &(new_tree_->mutex_));
+  new_tree_->MaybeScheduleCompaction();
   new_tree_->mutex_.Unlock();
 
   /// change the tree_size indicators et.al.
@@ -586,8 +610,15 @@ Status SingleTree::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     if (base != nullptr) {
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
-    edit->AddFile(level, meta.number, meta.file_size, meta.smallest,
+    edit->AddFile(level, meta.pos_, meta.number, meta.file_size, meta.smallest,
                   meta.largest);
+    /// add for split size compute
+    if(has_imm_split_){
+      tree_size_ += meta.file_size;
+      split_size_max += meta.file_size;
+      edit->SetSplitSizeMax(split_size_max);
+    } else
+      tree_size_ += meta.file_size;
   }
 
   CompactionStats stats;
@@ -634,6 +665,8 @@ void SingleTree::CompactMemTable() {
     has_imm_.store(false, std::memory_order_release);
     RemoveObsoleteFiles();
     db_->RemoveObsoleteFiles();
+    if(tree_size_ > dynamicConfig::kSplitSize)
+      split_flag_ = true;
   } else {
     RecordBackgroundError(s);
   }
@@ -679,9 +712,11 @@ void SingleTree::RemoveObsoleteFiles() {
   std::set<uint64_t> live = pending_outputs_;
   //live.insert(pending_outputs_.begin(), pending_outputs_.end());
   versions_->AddLiveFiles(&live);
-  for (auto & split_file : db_->file_split_[id_]) {
-    live.insert(split_file.first);
-  }
+
+  if(db_->file_split_.find(id_) != db_->file_split_.end())
+    for (auto & split_file : db_->file_split_[id_]) {
+      live.insert(split_file.first);
+    }
 
   std::vector<std::string> filenames;
   std::string sub_filedir = db_->dbname_ + "/vol" + std::to_string(id_);
@@ -747,7 +782,7 @@ void SingleTree::MaybeScheduleCompaction() {
     // No work to be done
   } else {
     background_compaction_scheduled_ = true;
-    db_->env_->Schedule(&SingleTree::BGWork, this, id_);
+    db_->env_->Schedule(&SingleTree::BGWork, this, id_ & 3);
   }
 }
 
@@ -809,7 +844,7 @@ void SingleTree::BackgroundCompaction() {
     assert(c->num_input_files(0) == 1);
     FileMetaData* f = c->input(0, 0);
     c->edit()->RemoveFile(c->level(), f->number);
-    c->edit()->AddFile(c->level() + 1, f->number, f->file_size, f->smallest,
+    c->edit()->AddFile(c->level() + 1, f->pos_, f->number, f->file_size, f->smallest,
                        f->largest);
     status = versions_->LogAndApply(c->edit(), &mutex_);
     if (!status.ok()) {
@@ -830,6 +865,8 @@ void SingleTree::BackgroundCompaction() {
     c->ReleaseInputs();
     RemoveObsoleteFiles();
     db_->RemoveObsoleteFiles();
+    if(tree_size_ > split_size_max)
+      split_flag_ = true;
   }
   delete c;
 
@@ -962,9 +999,11 @@ Status SingleTree::InstallCompactionResults(CompactionState* compact) {
   const int level = compact->compaction->level();
   for (size_t i = 0; i < compact->outputs.size(); i++) {
     const CompactionState::Output& out = compact->outputs[i];
-    compact->compaction->edit()->AddFile(level + 1, out.number, out.file_size,
+    compact->compaction->edit()->AddFile(level + 1, id_, out.number, out.file_size,
                                          out.smallest, out.largest);
   }
+  /// add for split
+  compact->compaction->edit()->SetSplitSizeMax(split_size_max);
   return versions_->LogAndApply(compact->compaction->edit(), &mutex_);
 }
 
@@ -1114,11 +1153,30 @@ Status SingleTree::DoCompactionWork(CompactionState* compact) {
   stats.micros = db_->env_->NowMicros() - start_micros - imm_micros;
   for (int which = 0; which < 2; which++) {
     for (int i = 0; i < compact->compaction->num_input_files(which); i++) {
-      stats.bytes_read += compact->compaction->input(which, i)->file_size;
+      auto & size_f = compact->compaction->input(which, i)->file_size;
+      // auto & num_f = compact->compaction->input(which, i)->number;
+      // auto & pos_f = compact->compaction->input(which, i)->pos_;
+      // bool find = false;
+      stats.bytes_read += size_f;
+      // if(db_->file_split_.find(pos_f) != db_->file_split_.end()){
+      //   auto & inner_split = db_->file_split_[pos_f];
+      //   if(inner_split.find(num_f) != inner_split.end()){
+      //     find = true;
+      //     tree_size_ = tree_size_ > size_f ? tree_size_ - size_f : 0;
+      //   }
+      // }
+      // if(!find)
+      //   // tree_size_ -= size_f;
+      //   tree_size_ = tree_size_ > size_f ? tree_size_ - size_f : 0;
+
+      tree_size_ = tree_size_ > size_f ? tree_size_ - size_f : 0;
+      split_size_max = split_size_max > size_f ? split_size_max - size_f : 0;
     }
   }
   for (size_t i = 0; i < compact->outputs.size(); i++) {
     stats.bytes_written += compact->outputs[i].file_size;
+    tree_size_ += compact->outputs[i].file_size;
+    split_size_max += compact->outputs[i].file_size;
   }
   stats.nums = 1;
 
@@ -1383,7 +1441,8 @@ Status DBImpl::NewDB() {
       new_Tree.SetOldestLogNumber(0);
       new_Tree.SetNextFile(2);
       new_Tree.SetLastSequence(0);
-      new_Tree.setSingleTreeID(i);
+      new_Tree.SetSingleTreeID(i);
+      new_Tree.SetSplitSizeMax(dynamicConfig::kSplitSize);
       std::string record;
       new_Tree.EncodeTo(&record);
       s = log.AddRecord(record);
@@ -1570,19 +1629,46 @@ void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
 }
 
 ///** 解析当前数据库中的文件
-namespace fs = std::filesystem;
-uint8_t subdir(std::map<uint8_t, uint8_t>& idset, std::string dirPath){
+// namespace fs = std::filesystem;
+// uint8_t subdir(std::map<uint8_t, uint8_t>& idset, std::string dirPath){
+//   uint8_t max_num = 2;
+//   std::set<uint8_t> subDirs_;
+//   // 遍历目录中的子目录
+
+//   for (const auto& entry : fs::directory_iterator(dirPath)) {
+
+//     if (fs::is_directory(entry.path())) {
+//       std::string strTmp = std::string(entry.path().filename());
+//       if(strTmp.rfind("vol", 0) == 0) {
+//           auto num = std::stoi(strTmp.substr(3));
+//           subDirs_.insert(num);
+//       }
+//     }
+//   }
+//   for(auto& id : subDirs_){
+//     if(id < 4){
+//       idset[id] = 2;
+//     } else {
+//       // uint8_t l_shift = 31 - __builtin_clz(id);
+//       uint8_t l_shift = log2(id) + 1;
+//       idset[id] = l_shift;
+//       uint8_t id_parent = id & (~(1 << (l_shift - 1)));
+//       idset[id_parent] = l_shift;
+//       max_num = max_num < l_shift ? l_shift : max_num;
+//     }
+//   }
+//   return max_num;
+// }
+
+uint8_t subdir(std::unordered_map<uint8_t, uint8_t>& idset, std::vector<std::string>& dir_name){
   uint8_t max_num = 2;
   std::set<uint8_t> subDirs_;
   // 遍历目录中的子目录
-  for (const auto& entry : fs::directory_iterator(dirPath)) {
 
-      if (fs::is_directory(entry.path())) {
-        std::string strTmp = std::string(entry.path().filename());
-        if(strTmp.rfind("vol", 0) == 0) {
-            auto num = std::stoi(strTmp.substr(3));
-            subDirs_.insert(num);
-        }
+  for(auto &dir : dir_name){
+    if(dir.rfind("vol", 0) == 0) {
+          auto num = std::stoi(dir.substr(3));
+          subDirs_.insert(num);
       }
   }
 
@@ -1643,7 +1729,9 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     }
   } else {
     ///** 给出恢复数据后LSMT的数目和表示的最小位数
-    dynamicConfig::kNumTreeBits = subdir(dynamicConfig::idSet, dbname_);
+    std::vector<std::string> result;
+    env_->GetChildrenDir(dbname_, &result);
+    dynamicConfig::kNumTreeBits = subdir(dynamicConfig::idSet, result);
     dynamicConfig::kNumSingleTrees = dynamicConfig::idSet.size();
     if (options_.error_if_exists) {
       return Status::InvalidArgument(dbname_,
@@ -1664,6 +1752,7 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     version_sets[treeID] = singleTrees_[treeID]->versions_;
     edit[treeID] = VersionEdit();
   }
+
   VersionSet::SetMutex(&mutex_);
   s = VersionSet::Recover(save_manifest, version_sets);
   if (!s.ok()) {
@@ -1694,6 +1783,8 @@ Status DBImpl::Recover(std::unordered_map<uint8_t, VersionEdit> &edit, bool* sav
     if (min_log > singleTrees_[treeID]->versions_->OldestLogNumber())
       min_log = singleTrees_[treeID]->versions_->OldestLogNumber();
     singleTrees_[treeID]->versions_->AddLiveFiles(&expected, file_split_);
+    singleTrees_[treeID]->versions_->SetTreeSize(singleTrees_[treeID]->tree_size_);
+    singleTrees_[treeID]->split_size_max = singleTrees_[treeID]->versions_->GetSplitSizeMax();
   }
 
   std::vector<std::string> filenames;
@@ -1828,6 +1919,10 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
       break;
     }
     uint8_t Tree_id = dynamicConfig::calculateTreeNum(key_hash);
+
+    if(log_number < singleTrees_[Tree_id]->versions_->OldestLogNumber())
+      continue;
+
     if (mem[Tree_id] == nullptr) {
       mem[Tree_id] = new MemTable(internal_comparator_);
       mem[Tree_id]->Ref();
@@ -1920,13 +2015,15 @@ void DBImpl::MaybeIgnoreError(Status* s) const {
 void DBImpl::RemoveObsoleteFiles() {
 
   // Make a set of all of the live files
+
   uint64_t min_log_num = singleTrees_[0]->versions_->OldestLogNumber();
   std::vector<uint64_t> prev_logs;
-  for (uint8_t i = 0; i < dynamicConfig::kNumSingleTrees; i++) {
-    if (min_log_num > singleTrees_[i]->versions_->OldestLogNumber()) {
-      min_log_num = singleTrees_[i]->versions_->OldestLogNumber();
+  for (auto &ID : dynamicConfig::idSet) {
+    auto treeID = ID.first;
+    if (min_log_num > singleTrees_[treeID]->versions_->OldestLogNumber()) {
+      min_log_num = singleTrees_[treeID]->versions_->OldestLogNumber();
     }
-    prev_logs.push_back(singleTrees_[i]->versions_->PrevLogNumber());
+    prev_logs.push_back(singleTrees_[treeID]->versions_->PrevLogNumber());
   }
 
   // printf("min lognum : %lu\n",min_log_num);

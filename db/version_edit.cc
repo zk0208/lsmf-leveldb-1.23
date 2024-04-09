@@ -22,7 +22,8 @@ enum Tag {
   // 8 was used for large value refs
   kPrevLogNumber = 9,
   kSingleTreeID = 10,
-  kOldestLogNumber =11
+  kOldestLogNumber = 11,
+  kSplitSizeMax = 12
 };
 
 void VersionEdit::Clear() {
@@ -32,6 +33,7 @@ void VersionEdit::Clear() {
   prev_log_number_ = 0;
   oldest_log_number_=0;
   last_sequence_ = 0;
+  split_size_max_ = 0;
   next_file_number_ = 0;
   has_comparator_ = false;
   has_log_number_ = false;
@@ -39,6 +41,7 @@ void VersionEdit::Clear() {
   has_oldest_log_number_=false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
+  has_split_size_max_ = false;
   deleted_files_.clear();
   new_files_.clear();
 }
@@ -51,6 +54,10 @@ void VersionEdit::EncodeTo(std::string* dst) const {
   if (has_single_tree_id_) {
     PutVarint32(dst, kSingleTreeID);
     PutVarint64(dst, single_tree_id_);
+  }
+  if(has_split_size_max_){
+    PutVarint32(dst, kSplitSizeMax);
+    PutVarint64(dst, split_size_max_);
   }
   if (has_log_number_) {
     PutVarint32(dst, kLogNumber);
@@ -89,6 +96,7 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     const FileMetaData& f = new_files_[i].second;
     PutVarint32(dst, kNewFile);
     PutVarint32(dst, new_files_[i].first);  // level
+    PutFixed8(dst, f.pos_);
     PutVarint64(dst, f.number);
     PutVarint64(dst, f.file_size);
     PutLengthPrefixedSlice(dst, f.smallest.Encode());
@@ -186,6 +194,13 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
           msg = "last sequence number";
         }
         break;
+      case kSplitSizeMax:
+        if (GetVarint64(&input, &split_size_max_)) {
+          has_split_size_max_ = true;
+        } else {
+          msg = "split max size";
+        }
+        break;
 
       case kCompactPointer:
         if (GetLevel(&input, &level) && GetInternalKey(&input, &key)) {
@@ -204,7 +219,8 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         break;
 
       case kNewFile:
-        if (GetLevel(&input, &level) && GetVarint64(&input, &f.number) &&
+        if (GetLevel(&input, &level) && GetFixed8(&input, &f.pos_) &&
+            GetVarint64(&input, &f.number) &&
             GetVarint64(&input, &f.file_size) &&
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest)) {
@@ -262,6 +278,10 @@ std::string VersionEdit::DebugString() const {
     r.append("\n  LastSeq: ");
     AppendNumberTo(&r, last_sequence_);
   }
+  if (has_split_size_max_) {
+    r.append("\n  SplitSize: ");
+    AppendNumberTo(&r, split_size_max_);
+  }
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
     r.append("\n  CompactPointer: ");
     AppendNumberTo(&r, compact_pointers_[i].first);
@@ -278,6 +298,8 @@ std::string VersionEdit::DebugString() const {
     const FileMetaData& f = new_files_[i].second;
     r.append("\n  AddFile: ");
     AppendNumberTo(&r, new_files_[i].first);
+    r.append(" ");
+    AppendNumberTo(&r, f.pos_);
     r.append(" ");
     AppendNumberTo(&r, f.number);
     r.append(" ");

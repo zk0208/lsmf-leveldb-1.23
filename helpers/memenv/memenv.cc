@@ -308,6 +308,11 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
+  Status GetChildrenDir(const std::string& dir,
+                             std::vector<std::string>* result) override {
+    return Status::OK();
+  }
+
   void RemoveFileInternal(const std::string& fname)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
     if (file_map_.find(fname) == file_map_.end()) {

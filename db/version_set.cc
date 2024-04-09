@@ -49,7 +49,8 @@ static double MaxBytesForLevel(const Options* options, int level) {
 
   // Result for both level-0 and level-1
   //double result = 10. * 1048576.0;
-  double result = 5.0 * options->max_file_size;
+  double result = 256.0 * 1048576.0;
+  // double result = 5.0 * options->max_file_size;
   while (level > 1) {
     result *= 10;
     level--;
@@ -199,8 +200,8 @@ class Version::LevelFileNumIterator : public Iterator {
   Slice value() const override {
     assert(Valid());
     EncodeFixed8(value_buf_, (*flist_)[index_]->pos_);
-    EncodeFixed64(value_buf_, (*flist_)[index_]->number);
-    EncodeFixed64(value_buf_ + 8, (*flist_)[index_]->file_size);
+    EncodeFixed64(value_buf_ + 1, (*flist_)[index_]->number);
+    EncodeFixed64(value_buf_ + 9, (*flist_)[index_]->file_size);
     return Slice(value_buf_, sizeof(value_buf_));
   }
   Status status() const override { return Status::OK(); }
@@ -211,7 +212,7 @@ class Version::LevelFileNumIterator : public Iterator {
   uint32_t index_;
 
   // Backing store for value().  Holds the file number and size.
-  mutable char value_buf_[16];
+  mutable char value_buf_[17];
 };
 
 static Iterator* GetFileIterator(void* arg, const ReadOptions& options,
@@ -609,10 +610,12 @@ class VersionSet::Builder {
   bool have_prev_log_number_;
   bool have_last_sequence_;
   bool have_oldest_log_number_;
+  bool has_split_size_max_;
   uint64_t log_number_;
   uint64_t prev_log_number_;
   uint64_t oldest_log_number_;
   uint64_t last_sequence_;
+  uint64_t split_size_max_;
   // Initialize a builder with the files from *base and other info from *vset
   Builder(VersionSet* vset, Version* base) 
   : vset_(vset), 
@@ -621,6 +624,8 @@ class VersionSet::Builder {
     have_prev_log_number_(false),
     have_oldest_log_number_(false),
     have_last_sequence_(false),
+    has_split_size_max_(false),
+    split_size_max_(0),
     log_number_(0),
     prev_log_number_(0),
     oldest_log_number_(0),
@@ -671,6 +676,10 @@ class VersionSet::Builder {
     if (edit->has_last_sequence_) {
       last_sequence_ = edit->last_sequence_;
       have_last_sequence_ = true;
+    }
+    if (edit->has_split_size_max_) {
+      split_size_max_ = edit->split_size_max_;
+      has_split_size_max_ = true;
     }
     // Update compaction pointers
     for (size_t i = 0; i < edit->compact_pointers_.size(); i++) {
@@ -828,7 +837,7 @@ void VersionSet::AppendVersion(Version* v) {
 }
 
 Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
-  edit->setSingleTreeID(id_);
+  edit->SetSingleTreeID(id_);
   if (edit->has_log_number_) {
     assert(edit->log_number_ >= log_number_);
     assert(edit->log_number_ < next_file_number_);
@@ -838,6 +847,10 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 
   if (!edit->has_prev_log_number_) {
     edit->SetPrevLogNumber(prev_log_number_);
+  }
+
+  if(!edit->has_split_size_max_) {
+    edit->SetSplitSizeMax(split_size_max_);
   }
 
   edit->SetNextFile(next_file_number_);
@@ -903,6 +916,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     log_number_ = edit->log_number_;
     prev_log_number_ = edit->prev_log_number_;
     oldest_log_number = edit->oldest_log_number_;
+    split_size_max_ = edit->split_size_max_;
   } else {
     delete v;
     // if (!new_manifest_file.empty()) {
@@ -921,7 +935,8 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
 
   // Save metadata
   VersionEdit edit;
-  edit.setSingleTreeID(id_);
+  edit.SetSingleTreeID(id_);
+  edit.SetSplitSizeMax(split_size_max_);
   edit.SetLastSequence(last_sequence_);
   edit.SetLogNumber(log_number_);
   edit.SetNextFile(next_file_number_);
@@ -941,7 +956,7 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
     const std::vector<FileMetaData*>& files = current_->files_[level];
     for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
-      edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
+      edit.AddFile(level, f->pos_, f->number, f->file_size, f->smallest, f->largest);
     }
   }
 
@@ -957,8 +972,9 @@ Status VersionSet::WriteSnapshot(log::Writer* log,
     Version* current = vs.second->current_;
     // Save metadata
     VersionEdit edit;
-    edit.setSingleTreeID(vs.first);
+    edit.SetSingleTreeID(vs.first);
     edit.SetLastSequence(vs.second->last_sequence_);
+    edit.SetSplitSizeMax(vs.second->split_size_max_);
     edit.SetLogNumber(vs.second->log_number_);
     edit.SetNextFile(vs.second->next_file_number_);
 
@@ -976,7 +992,7 @@ Status VersionSet::WriteSnapshot(log::Writer* log,
       const std::vector<FileMetaData*>& files = vs.second->current_->files_[level];
       for (size_t i = 0; i < files.size(); i++) {
         const FileMetaData* f = files[i];
-        edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
+        edit.AddFile(level, f->pos_, f->number, f->file_size, f->smallest, f->largest);
       }
     }
    
@@ -1036,6 +1052,7 @@ Status VersionSet::CopyVersionSet(VersionSet* vset, port::Mutex* mu){
   Status s;
   VersionEdit edit;
   edit.SetLogNumber(vset->LogNumber());
+  edit.SetSplitSizeMax(vset->split_size_max_);
   edit.SetPrevLogNumber(vset->PrevLogNumber());
   edit.SetOldestLogNumber(vset->OldestLogNumber());
   edit.SetComparatorName(vset->icmp_.user_comparator()->Name());
@@ -1057,8 +1074,6 @@ Status VersionSet::CopyVersionSet(VersionSet* vset, port::Mutex* mu){
       edit.AddFileForSplit(level, f->pos_, f->number, f->file_size, f->smallest, f->largest);
     }
   }
-
-
 
   s = LogAndApply(&edit, mu);
   return s;
@@ -1174,6 +1189,7 @@ Status VersionSet:: Recover(bool* save_manifest, std::unordered_map<uint8_t, Ver
         version_sets[bd.first]->AppendVersion(v);
 
         version_sets[bd.first]->last_sequence_ = builder->last_sequence_;
+        version_sets[bd.first]->split_size_max_ = builder->split_size_max_;
         version_sets[bd.first]->log_number_ = builder->log_number_;
         version_sets[bd.first]->prev_log_number_ = builder->prev_log_number_;
         version_sets[bd.first]->oldest_log_number = builder->oldest_log_number_;
@@ -1281,13 +1297,18 @@ int VersionSet::NumLevelFiles(int level) const {
 
 const char* VersionSet::LevelSummary(LevelSummaryStorage* scratch) const {
   // Update code if kNumLevels changes
-  static_assert(config::kNumLevels == 7, "");
+  // static_assert(config::kNumLevels == 7, "");
+  // std::snprintf(
+  //     scratch->buffer, sizeof(scratch->buffer), "files[ %d %d %d %d %d %d %d ]",
+  //     int(current_->files_[0].size()), int(current_->files_[1].size()),
+  //     int(current_->files_[2].size()), int(current_->files_[3].size()),
+  //     int(current_->files_[4].size()), int(current_->files_[5].size()),
+  //     int(current_->files_[6].size()));
+  static_assert(config::kNumLevels == 4, "");
   std::snprintf(
-      scratch->buffer, sizeof(scratch->buffer), "files[ %d %d %d %d %d %d %d ]",
+      scratch->buffer, sizeof(scratch->buffer), "files[ %d %d %d %d ]",
       int(current_->files_[0].size()), int(current_->files_[1].size()),
-      int(current_->files_[2].size()), int(current_->files_[3].size()),
-      int(current_->files_[4].size()), int(current_->files_[5].size()),
-      int(current_->files_[6].size()));
+      int(current_->files_[2].size()), int(current_->files_[3].size()));
   return scratch->buffer;
 }
 
@@ -1349,6 +1370,13 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live, std::unordered_map<uint8
       }
     }
   }
+}
+
+void VersionSet::SetTreeSize(uint64_t &size){
+  for (int level = 0; level < config::kNumLevels; level++) {
+      const std::vector<FileMetaData*>& files = current_->files_[level];
+      size += TotalFileSize(files);
+    }
 }
 
 int64_t VersionSet::NumLevelBytes(int level) const {
@@ -1712,11 +1740,12 @@ void Compaction::AddInputDeletions(VersionEdit* edit) {
 void Compaction::SetGCSplitFiles(std::unordered_map<uint8_t, std::unordered_map<uint64_t, std::atomic<int>>> &file_split_, uint8_t id){
   for (int which = 0; which < 2; which++) {
     for (size_t i = 0; i < inputs_[which].size(); i++) {
-      if(inputs_[which][i]->pos_ != id)
-        file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number]--;
-      if(file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number] <= 0)
-        file_split_[inputs_[which][i]->pos_].erase(inputs_[which][i]->number);
-    }
+      if(inputs_[which][i]->pos_ != id){
+         file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number]--;
+        if(file_split_[inputs_[which][i]->pos_][inputs_[which][i]->number] <= 0)
+          file_split_[inputs_[which][i]->pos_].erase(inputs_[which][i]->number);
+        }
+      }
   }
 }
 

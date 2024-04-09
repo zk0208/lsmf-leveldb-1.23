@@ -30,6 +30,7 @@ void PutLengthPrefixedSlice(std::string* dst, const Slice& value);
 
 // Standard Get... routines parse a value from the beginning of a Slice
 // and advance the slice past the parsed value.
+bool GetFixed8(Slice* input, uint8_t* value);
 bool GetVarint32(Slice* input, uint32_t* value);
 bool GetVarint64(Slice* input, uint64_t* value);
 bool GetLengthPrefixedSlice(Slice* input, Slice* result);
@@ -59,7 +60,7 @@ inline void EncodeFixed8(char* dst, uint8_t value) {
   uint8_t* const buffer = reinterpret_cast<uint8_t*>(dst);
 
   // Recent clang and gcc optimize this to a single mov / str instruction.
-  buffer[0] = value;
+  buffer[0] = static_cast<uint8_t>(value);
 }
 
 inline void EncodeFixed32(char* dst, uint32_t value) {
@@ -93,7 +94,7 @@ inline void EncodeFixed64(char* dst, uint64_t value) {
 inline uint8_t DecodeFixed8(const char* ptr) {
   const uint8_t* const buffer = reinterpret_cast<const uint8_t*>(ptr);
 
-  return buffer[0];
+  return static_cast<uint64_t>(buffer[0]);
 }
 
 inline uint32_t DecodeFixed32(const char* ptr) {

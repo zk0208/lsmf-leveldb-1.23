@@ -6,11 +6,44 @@
 
 #include <cstdio>
 #include <sstream>
+#include <unordered_map>
 
 #include "port/port.h"
 #include "util/coding.h"
 
 namespace leveldb {
+  // Multi-LSM* ： options additional
+  namespace dynamicConfig {
+    uint8_t key_hash_bytes = 1;
+    std::unordered_map<uint8_t, uint8_t> idSet = {};   //代表子树编号，当前编号的位数
+    uint8_t kNumSingleTrees = 4;
+    uint8_t kNumTreeBits = 2;
+    double kExpandFlag = 0.8;
+    uint64_t kSplitSize = (uint64_t)30 << 30;
+
+    uint8_t calculateTreeNum(uint8_t hash){
+      int bits = kNumTreeBits;
+      while(bits >= 2){
+        uint8_t num = hash & ((1 << bits) - 1);
+        if(idSet.find(num) != idSet.end())
+          return num;
+        else
+          --bits; 
+      }
+      return 0;
+    }
+    
+    /// error maybe need to change
+    bool testPos(Slice value, uint8_t id) {
+      uint32_t len;
+      const char* p = value.data();
+      // p = GetVarint32Ptr(p, p + 5, &len);
+      uint8_t hash = DecodeFixed8(p);
+      hash = hash & ((1 << idSet[id]) - 1);
+      return hash == id;
+    }
+
+  }
 
 static uint64_t PackSequenceAndType(uint64_t seq, ValueType t) {
   assert(seq <= kMaxSequenceNumber);

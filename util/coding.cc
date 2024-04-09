@@ -4,6 +4,7 @@
 
 #include "util/coding.h"
 #include <cstdint>
+#include "leveldb/slice.h"
 
 namespace leveldb {
 
@@ -15,13 +16,13 @@ void PutFixed8(std::string *dst, uint8_t value) {
 
 void PutFixed32(std::string* dst, uint32_t value) {
   char buf[sizeof(value)];
-  EncodeFixed32(buf, value);
+  memcpy(buf, &value, sizeof(value));
   dst->append(buf, sizeof(buf));
 }
 
 void PutFixed64(std::string* dst, uint64_t value) {
   char buf[sizeof(value)];
-  EncodeFixed64(buf, value);
+  memcpy(buf, &value, sizeof(value));
   dst->append(buf, sizeof(buf));
 }
 
@@ -106,6 +107,17 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
     }
   }
   return nullptr;
+}
+
+bool GetFixed8(Slice* input, uint8_t* value) {
+  if (input->size() >= 1) {
+    *value = DecodeFixed8(input->data());
+    const char* p = input->data() + 1;
+    *input = Slice(p, input->size() - 1);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool GetVarint32(Slice* input, uint32_t* value) {

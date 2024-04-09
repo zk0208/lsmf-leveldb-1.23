@@ -60,9 +60,13 @@ class VersionEdit {
     has_last_sequence_ = true;
     last_sequence_ = seq;
   }
-  void setSingleTreeID(uint64_t id) {
+  void SetSingleTreeID(uint64_t id) {
     has_single_tree_id_ = true;
     single_tree_id_ = id;
+  }
+  void SetSplitSizeMax(uint64_t size) {
+    has_split_size_max_ = true;
+    split_size_max_ = size;
   }
   void SetCompactPointer(int level, const InternalKey& key) {
     compact_pointers_.push_back(std::make_pair(level, key));
@@ -71,10 +75,10 @@ class VersionEdit {
   // Add the specified file at the specified number.
   // REQUIRES: This version has not been saved (see VersionSet::SaveTo)
   // REQUIRES: "smallest" and "largest" are smallest and largest keys in file
-  void AddFile(int level, uint64_t file, uint64_t file_size,
+  void AddFile(int level, uint8_t pos, uint64_t file, uint64_t file_size,
                const InternalKey& smallest, const InternalKey& largest) {
     FileMetaData f;
-    f.pos_ = single_tree_id_;
+    f.pos_ = pos;
     f.number = file;
     f.file_size = file_size;
     f.smallest = smallest;
@@ -114,6 +118,7 @@ class VersionEdit {
   uint64_t oldest_log_number_;
   uint64_t next_file_number_; //多个tree共用
   uint64_t single_tree_id_;
+  uint64_t split_size_max_;
   SequenceNumber last_sequence_;
   bool has_comparator_;
   bool has_log_number_;
@@ -122,6 +127,7 @@ class VersionEdit {
   bool has_next_file_number_;
   bool has_last_sequence_;
   bool has_single_tree_id_;
+  bool has_split_size_max_;
 
   std::vector<std::pair<int, InternalKey>> compact_pointers_;
   DeletedFileSet deleted_files_;

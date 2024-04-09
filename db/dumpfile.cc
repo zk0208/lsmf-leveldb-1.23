@@ -74,7 +74,7 @@ Status PrintLogContents(Env* env, const std::string& fname,
 // Called on every item found in a WriteBatch.
 class WriteBatchItemPrinter : public WriteBatch::Handler {
  public:
-  void Put(const Slice& key, const Slice& value) override {
+  void Put(const Slice& key, const uint8_t& key_hash, const Slice& value) override {
     std::string r = "  put '";
     AppendEscapedStringTo(&r, key);
     r += "' '";
@@ -82,7 +82,7 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
     r += "'\n";
     dst_->Append(r);
   }
-  void Delete(const Slice& key) override {
+  void Delete(const Slice& key, const uint8_t& key_hash) override {
     std::string r = "  del '";
     AppendEscapedStringTo(&r, key);
     r += "'\n";
