@@ -665,7 +665,7 @@ void SingleTree::CompactMemTable() {
     has_imm_.store(false, std::memory_order_release);
     RemoveObsoleteFiles();
     db_->RemoveObsoleteFiles();
-    if(tree_size_ > dynamicConfig::kSplitSize)
+    if(tree_size_ > split_size_max)
       split_flag_ = true;
   } else {
     RecordBackgroundError(s);
