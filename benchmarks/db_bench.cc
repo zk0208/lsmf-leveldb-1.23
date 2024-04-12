@@ -833,7 +833,7 @@ class Benchmark {
 
     // 自己的配置
     options.disable_compaction = FLAGS_disable_compaction;
-    // options.compression = kNoCompression;
+    options.compression = kNoCompression;
 
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
@@ -866,6 +866,8 @@ class Benchmark {
     Status s;
     int64_t bytes = 0;
     KeyBuffer key;
+    //每个线程执行的数量
+    num_ = FLAGS_num / FLAGS_threads;
     for (int i = 0; i < num_; i += entries_per_batch_) {
       batch.Clear();
       for (int j = 0; j < entries_per_batch_; j++) {
@@ -915,6 +917,7 @@ class Benchmark {
     std::string value;
     int found = 0;
     KeyBuffer key;
+    reads_ = FLAGS_reads / FLAGS_threads;
     for (int i = 0; i < reads_; i++) {
       const int k = thread->rand.Uniform(FLAGS_num);
       key.Set(k);

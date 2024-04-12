@@ -102,6 +102,7 @@ SingleTree::SingleTree(DBImpl* db, uint32_t id)
       background_compaction_scheduled_(false),
       background_work_finished_signal_(&mutex_),
       mem_(nullptr),
+      imm_logfile_number_(0),
       imm_(nullptr),
       has_imm_(false),
       seed_(0),
@@ -397,6 +398,7 @@ Status SingleTree::MakeRoomForWrite(bool force) {
       db_->log_ = new log::Writer(lfile);
       db_->mutex_.Unlock();
       imm_ = mem_;
+      imm_logfile_number_ = new_log_number;
       has_imm_.store(true, std::memory_order_release);
       mem_ = new MemTable(internal_comparator_);
       mem_->Ref();
@@ -531,7 +533,7 @@ void SingleTree::CompactMemTable() {
     edit.SetPrevLogNumber(0);
     // 遍历log链表，找到最旧的数下一个
     db_->mutex_.Lock();
-    edit.SetOldestLogNumber(db_->logfile_number_);
+    edit.SetOldestLogNumber(imm_logfile_number_);
     edit.SetLogNumber(db_->logfile_number_);  // Earlier logs no longer needed
     db_->mutex_.Unlock();
     s = versions_->LogAndApply(&edit, &mutex_);
@@ -1041,25 +1043,22 @@ Status SingleTree::DoCompactionWork(CompactionState* compact) {
 
 void SingleTree::NewInternalIterator(const ReadOptions& options, SequenceNumber* latest_snapshot,
                               uint32_t* seed,
-                              std::vector<Iterator*>&list,std::vector<iterstateclean::IterState*>& cleanup) {
+                              std::vector<Iterator*> *list,std::vector<iterstateclean::IterState*>& cleanup) {
   mutex_.Lock();
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
-  std::vector<std::string> iterSignList;
-  list.push_back(mem_->NewIterator());
-  iterSignList.push_back("mem");
+  // std::vector<std::string> iterSignList;
+  list[0].push_back(mem_->NewIterator());
   mem_->Ref();
   if (imm_ != nullptr) {
-    list.push_back(imm_->NewIterator());
-    iterSignList.push_back("mem");
+    list[0].push_back(imm_->NewIterator());
     imm_->Ref();
   }
   ReadOptions read_option = options;
   read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
-  versions_->current()->AddIterators(read_option, &list, &iterSignList);
-  // Iterator* internal_iter =
-  //     NewMergingIterator(&internal_comparator_, &list[0], &iterSignList[0], db_->dbname_, list.size());
+  versions_->current()->AddIterators(read_option, list);
+
   // Iterator* internal_iter =
   //   NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
@@ -1071,6 +1070,38 @@ void SingleTree::NewInternalIterator(const ReadOptions& options, SequenceNumber*
   *seed = ++seed_;
   mutex_.Unlock();
   return ;
+}
+
+Iterator* SingleTree::NewInternalIterator(const ReadOptions& options,
+                                      SequenceNumber* latest_snapshot,
+                                      uint32_t* seed,
+                                      std::vector<iterstateclean::IterState*>& cleanup) {
+  mutex_.Lock();
+  *latest_snapshot = versions_->LastSequence();
+
+  // Collect together all needed child iterators
+  std::vector<Iterator*> list;
+  list.push_back(mem_->NewIterator());
+  mem_->Ref();
+  if (imm_ != nullptr) {
+    list.push_back(imm_->NewIterator());
+    imm_->Ref();
+  }
+  ReadOptions read_option = options;
+  read_option.read_dir = db_->dbname_ + "/vol" + std::to_string(id_ + 1);
+  versions_->current()->AddIterators(read_option, list);
+
+  Iterator* internal_iter =
+    NewMergingIterator(&internal_comparator_, &list[0], list.size());
+
+  versions_->current()->Ref();
+
+  // IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
+  cleanup.push_back(new iterstateclean::IterState(&mutex_, mem_, imm_, versions_->current()));
+
+  *seed = ++seed_;
+  mutex_.Unlock();
+  return internal_iter;
 }
 
 // void SingleTree::NewInternalIterator(const ReadOptions& options, SequenceNumber* latest_snapshot,
@@ -1357,34 +1388,36 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
   *latest_snapshot = singleTrees_[0]->versions_->LastSequence();
 
   // Collect together all needed child iterators
-  const int tnum = config::kNumSingleTrees;
-  std::vector<Iterator*> list[tnum];
   std::vector<Iterator*> list_res;
-  //std::vector<Iterator*> list_res_temp;
-  std::vector<iterstateclean::IterState*>clean_list;
   uint32_t seed_single = 0;
+  std::vector<iterstateclean::IterState*>clean_list;
+
   for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
-    singleTrees_[i]->NewInternalIterator(options, latest_snapshot, &seed_single,list[i],clean_list);
+    Iterator* it = singleTrees_[i]->NewInternalIterator(options, latest_snapshot, &seed_single,clean_list);
     *seed += seed_single;
+    list_res.push_back(it);
   }
-  for(int i = list[0].size() - 1; i >=0 ;i--){
-    for(int j = 0; j < tnum; j++){
-      list_res.push_back(list[j][i]);
-    }
-  }
-  // for(int i = 0; i < tnum; i++){
-  //   list_res.push_back(list[i].back());
-  //   list[i].pop_back();
+
+  // const int tnum = config::kNumLevels + 1;
+  // std::vector<Iterator*> list[tnum];
+  // std::vector<Iterator*> list_res;
+  // //std::vector<Iterator*> list_res_temp;
+  // std::vector<iterstateclean::IterState*>clean_list;
+  // uint32_t seed_single = 0;
+  // for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
+  //   singleTrees_[i]->NewInternalIterator(options, latest_snapshot, &seed_single, list,clean_list);
+  //   *seed += seed_single;
   // }
-  // for(int i = list[0].size() - 1; i >=0 ;i--){
-  //   for(int j = 0; j < tnum; j++){
-  //     list_res_temp.push_back(list[j][i]);
+
+  // for(int i = tnum -1; i >= 0 ;i--){
+  //   if(list[i].size() == 0) continue;
+  //   for(int j = 0; j < list[i].size(); j++){
+  //     list_res.push_back(list[i][j]);
   //   }
   // }
-  // list_res.push_back(NewMergingIterator(&internal_comparator_, &list_res_temp[0], list_res_temp.size()));
 
-  Iterator* internal_iter = 
-        NewMergingTreeIterator(&internal_comparator_, &list_res[0], list_res.size());
+
+  Iterator* internal_iter = NewMergingTreeIterator(&internal_comparator_, &list_res[0], list_res.size());
 
   for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
     internal_iter->RegisterCleanup(iterstateclean::CleanupIteratorState,clean_list[i],nullptr);
@@ -1525,7 +1558,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   if (!s.ok()) {
     return s;
   }
-  SequenceNumber max_sequence(0);
+  // SequenceNumber max_sequence(0);
+  SequenceNumber max_sequence[config::kNumSingleTrees] = {0};
 
   // Recover from all newer log files than the ones named in the
   // descriptor (new log files may have been added by the previous
@@ -1598,7 +1632,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   std::sort(logs.begin(), logs.end());
   for (size_t i = 0; i < logs.size(); i++) {
     s = RecoverLogFile(logs[i], (i == logs.size() - 1), save_manifest, edit,
-                       &max_sequence);
+                       max_sequence);
     if (!s.ok()) {
       return s;
     }
@@ -1611,8 +1645,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   }
 
    for (uint32_t j = 0; j < config::kNumSingleTrees; j++) {
-    if (singleTrees_[j]->versions_->LastSequence() < max_sequence) {
-      singleTrees_[j]->versions_->SetLastSequence(max_sequence);
+    if (singleTrees_[j]->versions_->LastSequence() < max_sequence[j]) {
+      singleTrees_[j]->versions_->SetLastSequence(max_sequence[j]);
     }
   }
 
@@ -1694,8 +1728,8 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     }
     const SequenceNumber last_seq = WriteBatchInternal::Sequence(&batch) +
                                     WriteBatchInternal::Count(&batch) - 1;
-    if (last_seq > *max_sequence) {
-      *max_sequence = last_seq;
+    if (last_seq > max_sequence[Tree_id]) {
+      max_sequence[Tree_id] = last_seq;
     }
 
     if (mem[Tree_id]->ApproximateMemoryUsage() > options_.write_buffer_size) {
@@ -1873,6 +1907,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
       }
       for (uint32_t i = 0; i < config::kNumSingleTrees; i++) {
         edit[i].SetLogNumber(new_log_number);
+        impl->singleTrees_[i]->imm_logfile_number_ = new_log_number;
         impl->singleTrees_[i]->mem_ = new MemTable(impl->internal_comparator_);
         impl->singleTrees_[i]->mem_->Ref();
       }

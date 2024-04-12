@@ -45,7 +45,7 @@ class MergingTreeIterator : public Iterator {
 
   ~MergingTreeIterator() override 
   {
-    printstats();
+    // printstats();
     done_ = false;
     if (!threadall_.empty()) {
       for (auto & t : threadall_) {
@@ -77,8 +77,8 @@ class MergingTreeIterator : public Iterator {
   }
 
   void Seek(const Slice& target) override {
-    double t1,t2,t3;
-    t1 = T_env->NowMicros();
+    // double t1,t2,t3;
+    // t1 = T_env->NowMicros();
     uint work_res = ((1 << th_n_) - 1);
     optype_ = seek;
     tar_ = target;
@@ -88,26 +88,26 @@ class MergingTreeIterator : public Iterator {
       work_ = 0;
       th_cv_.wait(lk, [&]{return work_ == work_res;});
     }
-    t2 = T_env ->NowMicros();
+    // t2 = T_env ->NowMicros();
     FindSmallest();
-    t3 = T_env->NowMicros();
-    ++itertime_.seek_num_;
-    itertime_.seek_ += t2 - t1;
-    ++itertime_.merge_num_;
-    itertime_.merge_tree_ += t3 - t2;
+    // t3 = T_env->NowMicros();
+    // ++itertime_.seek_num_;
+    // itertime_.seek_ += t2 - t1;
+    // ++itertime_.merge_num_;
+    // itertime_.merge_tree_ += t3 - t2;
     direction_ = kForward;
   }
 
   void Next() override {
     assert(Valid());
-    double t1,t2,t3;
+    // double t1,t2,t3;
     // Ensure that all children are positioned after key().
     // If we are moving in the forward direction, it is already
     // true for all of the non-current_ children since current_ is
     // the smallest child and key() == current_->key().  Otherwise,
     // we explicitly position the non-current_ children.
 
-    t1 = T_env->NowMicros();
+    // t1 = T_env->NowMicros();
 
     if (direction_ != kForward) {
       for (int i = 0; i < n_; i++) {
@@ -124,13 +124,13 @@ class MergingTreeIterator : public Iterator {
     }
     
     current_->Next();
-    t2 = T_env->NowMicros();
+    // t2 = T_env->NowMicros();
     FindSmallest();
-    t3 = T_env->NowMicros();
-    ++itertime_.next_num_;
-    itertime_.next_ += t2 - t1;
-    ++itertime_.merge_num_;
-    itertime_.merge_tree_ += t3 - t2;
+    // t3 = T_env->NowMicros();
+    // ++itertime_.next_num_;
+    // itertime_.next_ += t2 - t1;
+    // ++itertime_.merge_num_;
+    // itertime_.merge_tree_ += t3 - t2;
   }
 
   void Prev() override {

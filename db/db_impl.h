@@ -144,7 +144,12 @@ class SingleTree{
 
   void NewInternalIterator(const ReadOptions&, SequenceNumber* latest_snapshot,
                                 uint32_t* seed,
-                          std::vector<Iterator*>& list,std::vector<iterstateclean::IterState*>& cleanup);
+                          std::vector<Iterator*>* list,std::vector<iterstateclean::IterState*>& cleanup);
+
+  Iterator* NewInternalIterator(const ReadOptions&,
+                              SequenceNumber* latest_snapshot,
+                              uint32_t* seed,
+                              std::vector<iterstateclean::IterState*>& cleanup);
 
 
   // Compact the in-memory write buffer to disk.  Switches to a new
@@ -197,6 +202,7 @@ class SingleTree{
   bool background_compaction_scheduled_ GUARDED_BY(mutex_);
   port::CondVar background_work_finished_signal_ GUARDED_BY(mutex_);
   MemTable* mem_;
+  uint64_t imm_logfile_number_;  // 保证WAL与当前memtable、IMM一致，只有IMM刷盘了，才会改变
   MemTable* imm_ GUARDED_BY(mutex_);  // Memtable being compacted
   std::atomic<bool> has_imm_;         // So bg thread can detect non-null imm_
   // WritableFile* logfile_;

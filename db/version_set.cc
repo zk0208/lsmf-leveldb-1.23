@@ -44,7 +44,7 @@ static double MaxBytesForLevel(const Options* options, int level) {
 
   // Result for both level-0 and level-1
   //double result = 10. * 1048576.0;
-  double result = 5.0 * options->max_file_size;
+  double result = 256.0 * 1048576.0;
   while (level > 1) {
     result *= 10;
     level--;
@@ -228,12 +228,11 @@ Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
 }
 //修改计算iter时间占比
 void Version::AddIterators(const ReadOptions& options,
-                           std::vector<Iterator*>* iters, std::vector<std::string>* iters_sign) {
+                           std::vector<Iterator*>* iters) {
   // Merge all level zero files together since they may overlap
   for (size_t i = 0; i < files_[0].size(); i++) {
-    iters->push_back(vset_->table_cache_->NewIterator(
+    iters[1].push_back(vset_->table_cache_->NewIterator(
         options, files_[0][i]->number, files_[0][i]->file_size));
-    iters_sign->push_back("L0");
   }
 
   // For levels > 0, we can use a concatenating iterator that sequentially
@@ -241,9 +240,25 @@ void Version::AddIterators(const ReadOptions& options,
   // lazily.
   for (int level = 1; level < config::kNumLevels; level++) {
     if (!files_[level].empty()) {
-      iters->push_back(NewConcatenatingIterator(options, level));
-      // iters_sign->push_back("Ln");
-      iters_sign->push_back("L"+ std::to_string(level));
+      iters[level + 1].push_back(NewConcatenatingIterator(options, level));
+    }
+  }
+}
+void Version::AddIterators(const ReadOptions& options,
+                           std::vector<Iterator*>& iters) {
+  // Merge all level zero files together since they may overlap
+  for (size_t i = 0; i < files_[0].size(); i++) {
+    iters.push_back(vset_->table_cache_->NewIterator(
+        options, files_[0][i]->number, files_[0][i]->file_size));
+  }
+
+  // For levels > 0, we can use a concatenating iterator that sequentially
+  // walks through the non-overlapping files in the level, opening them
+  // lazily.
+  for (int level = 1; level < config::kNumLevels; level++) {
+    if (!files_[level].empty()) {
+      iters.push_back(NewConcatenatingIterator(options, level));
+
     }
   }
 }
