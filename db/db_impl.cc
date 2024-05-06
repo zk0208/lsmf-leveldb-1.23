@@ -1717,6 +1717,10 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     }
     uint32_t Tree_id =
         GetSingleTreeID(key.data(), key.size()) % config::kNumSingleTrees;
+
+    if(log_number < singleTrees_[Tree_id]->versions_->OldestLogNumber())
+      continue;
+    
     if (mem[Tree_id] == nullptr) {
       mem[Tree_id] = new MemTable(internal_comparator_);
       mem[Tree_id]->Ref();
